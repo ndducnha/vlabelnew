@@ -319,12 +319,16 @@ async function main() {
     const s = await prisma.supplementaryLabel.create({ data: { tenantId: tenant.id, productId: p.id, name, scope, batchCode, contentHtml: html, status: 'published', version: 2, createdByUserId: manager.id } });
     await prisma.supplementaryLabelVersion.create({ data: { labelId: s.id, versionNumber: 1, contentHtml: html, createdByUserId: manager.id } });
   };
-  await mkSupp('893110000001', 'Nhãn phụ tiếng Việt - Paracetamol', 'ALL', null,
-    '<h2>{{product_name}}</h2><p><b>Thành phần:</b> Paracetamol 500mg</p><p><b>Công dụng:</b> Giảm đau, hạ sốt.</p><p><b>Hướng dẫn sử dụng:</b> Người lớn uống 1-2 viên/lần, tối đa 8 viên/ngày.</p><p><b>Bảo quản:</b> Nơi khô ráo, dưới 30°C.</p><p><b>Xuất xứ:</b> {{origin}}</p><p><b>Chịu trách nhiệm:</b> {{manufacturer_name}}</p><p>GTIN {{gtin}} · Lô {{batch_number}}</p><p>{{qr_code}}</p>');
-  await mkSupp('893120000001', 'Nhãn phụ - Kem dưỡng lô KEM-2407', 'BATCH', 'LOT-KEM-2407',
-    '<h2>{{product_name}}</h2><p><b>Thành phần chính:</b> Hyaluronic Acid, Ceramide.</p><p><b>Hướng dẫn:</b> Thoa lượng vừa đủ lên mặt buổi tối.</p><p><b>Cảnh báo:</b> Chỉ dùng ngoài da, tránh vùng mắt.</p><p>Lô {{batch_number}} · NSX {{manufacturing_date}}</p>');
-  await mkSupp('893130000001', 'Nhãn phụ - Bình chữa cháy CO2', 'ALL', null,
-    '<h2>{{product_name}}</h2><p><b>Hướng dẫn:</b> Rút chốt an toàn, hướng loa vào gốc lửa, bóp cò.</p><p><b>Cảnh báo:</b> Kiểm định định kỳ 12 tháng/lần. Bảo quản nơi khô ráo.</p><p>GTIN {{gtin}}</p><p>{{qr_code}}</p>');
+  // Mỗi sản phẩm đã công bố có một nhãn phụ tiếng Việt (dựng từ thuộc tính sản phẩm)
+  for (const b of branches) for (const p of b.products) {
+    if (p.status !== 'published') continue;
+    const lines = (p.attrs as [string, string][]).map(([k, v]) => `<p><b>${k}:</b> ${v}</p>`).join('');
+    const html = `<h2>{{product_name}}</h2>${lines}<p><b>Xuất xứ:</b> {{origin}}</p><p><b>Chịu trách nhiệm:</b> {{manufacturer_name}}</p><p>GTIN {{gtin}}</p><p>{{qr_code}}</p>`;
+    await mkSupp(p.body, `Nhãn phụ tiếng Việt - ${p.name}`, 'ALL', null, html);
+  }
+  // Thêm một nhãn phụ theo lô để minh hoạ phạm vi
+  await mkSupp('893120000001', 'Nhãn phụ - Kem dưỡng lô KEM-2408', 'BATCH', 'LOT-KEM-2408',
+    '<h2>{{product_name}}</h2><p><b>Ưu đãi lô {{batch_number}}:</b> Tặng kèm mặt nạ dùng thử.</p><p><b>Hướng dẫn:</b> Thoa buổi tối. Chỉ dùng ngoài da, tránh vùng mắt.</p><p>NSX {{manufacturing_date}}</p><p>{{qr_code}}</p>');
 
   for (const a of ['ORG_CREATE', 'PRODUCT_CREATE', 'ELABEL_PUBLISH', 'FLOW_CREATE', 'TRACE_TASK_CREATE', 'SEED'])
     await prisma.auditLog.create({ data: { tenantId: tenant.id, actorUserId: manager.id, action: a, resource: 'tenant', resourceId: tenant.id } });
