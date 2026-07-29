@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, Pencil, Copy, Trash2, ExternalLink, Send, Archive, ChevronLeft, ArrowRight, Check, Loader2,
-  Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link2, Image as ImageIcon, Undo2, Redo2, Eraser, Heading, Package,
+  Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link2, Image as ImageIcon, Undo2, Redo2, Eraser, Package, Eye, Minus, FilePlus2,
 } from 'lucide-react';
 import { api, apiError, fileUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -13,8 +13,20 @@ import { PERMISSIONS } from '@vlabel/shared';
 const SCOPE: Record<string, string> = { ALL: 'Toàn bộ sản phẩm', BATCH: 'Theo lô', PRODUCTION: 'Theo ngày SX', ITEM: 'Theo đơn vị (serial)' };
 const STATUS: Record<string, { cls: string; label: string }> = { draft: { cls: 'pill-warn', label: 'Nháp' }, published: { cls: 'pill-good', label: 'Đã xuất bản' }, archived: { cls: 'pill-neutral', label: 'Ngừng dùng' } };
 const VARIABLES: [string, string][] = [['{{product_name}}', 'Tên SP'], ['{{gtin}}', 'GTIN'], ['{{batch_number}}', 'Số lô'], ['{{manufacturing_date}}', 'NSX'], ['{{expiry_date}}', 'HSD'], ['{{manufacturer_name}}', 'Nhà SX'], ['{{manufacturer_address}}', 'Địa chỉ'], ['{{origin}}', 'Xuất xứ'], ['{{qr_code}}', 'Mã QR']];
-const SIZES = ['80x50', '100x70', '60x40', '105x148'];
-const TITLES: Record<string, string> = { product: 'Chọn sản phẩm', scope: 'Phạm vi áp dụng', content: 'Soạn nội dung nhãn phụ', preview: 'Xem trước nhãn', publish: 'Lưu và xuất bản' };
+const TITLES: Record<string, string> = { product: 'Chọn sản phẩm', scope: 'Phạm vi áp dụng', content: 'Soạn trang nhãn phụ', publish: 'Lưu và xuất bản' };
+
+// Mẫu trang web nhãn phụ (chèn nhanh, người dùng điền tiếp)
+const WEB_TEMPLATE = `<h2>{{product_name}}</h2>
+<p><b>GTIN:</b> {{gtin}}</p>
+<h3>Thành phần</h3><p>Nhập thành phần sản phẩm…</p>
+<h3>Công dụng</h3><p>Nhập công dụng…</p>
+<h3>Hướng dẫn sử dụng</h3><p>Nhập hướng dẫn sử dụng…</p>
+<h3>Hướng dẫn bảo quản</h3><p>Nhập hướng dẫn bảo quản…</p>
+<h3>Cảnh báo an toàn</h3><p>Nhập cảnh báo (nếu có)…</p>
+<h3>Xuất xứ & tổ chức chịu trách nhiệm</h3>
+<p><b>Xuất xứ:</b> {{origin}}</p>
+<p><b>Chịu trách nhiệm:</b> {{manufacturer_name}}</p>
+<p><b>Địa chỉ:</b> {{manufacturer_address}}</p>`;
 
 export default function Supplementary() {
   const { can } = useAuth();
@@ -105,7 +117,7 @@ function Wizard({ initial, onClose }: { initial: any; onClose: () => void }) {
     contentHtml: initial.contentHtml ?? '', labelSize: initial.labelSize ?? '80x50', orientation: initial.orientation ?? 'portrait',
   });
   const [qrUrl, setQrUrl] = useState('');
-  const steps = ['product', 'scope', 'content', 'preview', 'publish'];
+  const steps = ['product', 'scope', 'content', 'publish'];
   const screen = steps[idx];
 
   // nạp QR sản phẩm để xem trước biến {{qr_code}}
@@ -137,8 +149,7 @@ function Wizard({ initial, onClose }: { initial: any; onClose: () => void }) {
         <div className="mt-2">
           {screen === 'product' && <ProductStep products={products.data ?? []} selected={f.productId} onSelect={selectProduct} onGtin={(g: string) => api.get('/products/by-gtin', { params: { gtin: g } }).then((r) => selectProduct(r.data)).catch(() => toast('Không tìm thấy GTIN', false))} />}
           {screen === 'scope' && <ScopeStep f={f} setF={setF} />}
-          {screen === 'content' && <ContentStep f={f} setF={setF} />}
-          {screen === 'preview' && <PreviewStep f={f} setF={setF} qrUrl={qrUrl} />}
+          {screen === 'content' && <ContentStep f={f} setF={setF} qrUrl={qrUrl} />}
           {screen === 'publish' && <PublishStep f={f} setF={setF} />}
         </div>
       </div>
@@ -201,32 +212,47 @@ function ScopeStep({ f, setF }: any) {
   );
 }
 
-function ContentStep({ f, setF }: any) {
+function ContentStep({ f, setF, qrUrl }: any) {
+  const [preview, setPreview] = useState(false);
   return (
     <div className="flex flex-col gap-3">
-      <RichEditor value={f.contentHtml} onChange={(html: string) => setF((s: any) => ({ ...s, contentHtml: html }))} />
-      <div>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--faint)] mb-1.5">Chèn biến động (tự thay khi hiển thị)</div>
-        <div className="flex flex-wrap gap-1.5">
-          {VARIABLES.map(([token, label]) => <button key={token} className="chip" onClick={() => document.execCommand('insertText', false, token)} title={token}>{label}</button>)}
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[12px] text-[var(--muted)]">Nội dung hiển thị như một trang web khi người dùng quét QR. Chèn mẫu để có sẵn bố cục, rồi điền nội dung.</p>
+        <button className="btn btn-sm flex-none" onClick={() => setPreview((p) => !p)}><Eye size={14} />{preview ? 'Đóng' : 'Xem trước'}</button>
       </div>
+      <RichEditor value={f.contentHtml} onChange={(html: string) => setF((s: any) => ({ ...s, contentHtml: html }))} variables={VARIABLES} template={WEB_TEMPLATE} />
+      {preview && (
+        <div className="card p-4">
+          <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--faint)] mb-2">Xem trước như trang QR</div>
+          <div className="np-content text-sm" style={{ lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: renderPreview(f.contentHtml, f, qrUrl) }} />
+        </div>
+      )}
     </div>
   );
 }
 
-function RichEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
+const COLORS = ['#111827', '#E23744', '#12A150', '#2E5BE8', '#D97706'];
+function RichEditor({ value, onChange, variables, template }: { value: string; onChange: (html: string) => void; variables?: [string, string][]; template?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value || ''; /* eslint-disable-next-line */ }, []);
-  const exec = (cmd: string, val?: string) => { ref.current?.focus(); document.execCommand(cmd, false, val); onChange(ref.current?.innerHTML ?? ''); };
+  const emit = () => onChange(ref.current?.innerHTML ?? '');
+  const exec = (cmd: string, val?: string) => { ref.current?.focus(); document.execCommand(cmd, false, val); emit(); };
   const Btn = ({ cmd, val, children, title }: any) => <button type="button" title={title} className="ws-tb" onMouseDown={(e) => { e.preventDefault(); exec(cmd, val); }}>{children}</button>;
+  const selStyle = { height: 30, borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--ink-2)', fontSize: 12, padding: '0 6px' } as any;
   return (
     <div className="card p-0 overflow-hidden">
       <div className="flex flex-wrap items-center gap-0.5 p-1.5" style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-        <Btn cmd="formatBlock" val="H2" title="Tiêu đề"><Heading size={15} /></Btn>
+        <select style={selStyle} title="Kiểu chữ" value="" onChange={(e) => { exec('formatBlock', e.target.value); e.currentTarget.value = ''; }}>
+          <option value="" disabled>Kiểu</option>
+          <option value="H2">Tiêu đề lớn</option>
+          <option value="H3">Tiêu đề nhỏ</option>
+          <option value="P">Đoạn văn</option>
+          <option value="BLOCKQUOTE">Trích dẫn</option>
+        </select>
         <Btn cmd="bold" title="Đậm"><Bold size={15} /></Btn>
         <Btn cmd="italic" title="Nghiêng"><Italic size={15} /></Btn>
         <Btn cmd="underline" title="Gạch chân"><Underline size={15} /></Btn>
+        {COLORS.map((c) => <button key={c} type="button" className="ws-tb" title="Màu chữ" onMouseDown={(e) => { e.preventDefault(); exec('foreColor', c); }}><span style={{ width: 13, height: 13, borderRadius: 3, background: c, display: 'block' }} /></button>)}
         <span className="ws-sep" />
         <Btn cmd="insertUnorderedList" title="Danh sách"><List size={15} /></Btn>
         <Btn cmd="insertOrderedList" title="Danh sách số"><ListOrdered size={15} /></Btn>
@@ -237,18 +263,24 @@ function RichEditor({ value, onChange }: { value: string; onChange: (html: strin
         <span className="ws-sep" />
         <button type="button" className="ws-tb" title="Liên kết" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt('Nhập URL:'); if (u) exec('createLink', u); }}><Link2 size={15} /></button>
         <button type="button" className="ws-tb" title="Chèn ảnh" onMouseDown={(e) => { e.preventDefault(); const u = window.prompt('URL ảnh:'); if (u) exec('insertImage', u); }}><ImageIcon size={15} /></button>
+        <button type="button" className="ws-tb" title="Đường kẻ" onMouseDown={(e) => { e.preventDefault(); exec('insertHorizontalRule'); }}><Minus size={15} /></button>
         <button type="button" className="ws-tb" title="Ký hiệu" onMouseDown={(e) => { e.preventDefault(); const s = window.prompt('Ký hiệu (VD ®, ™, °C, ✓):'); if (s) exec('insertText', s); }}>Ω</button>
         <span className="ws-sep" />
         <Btn cmd="undo" title="Hoàn tác"><Undo2 size={15} /></Btn>
         <Btn cmd="redo" title="Làm lại"><Redo2 size={15} /></Btn>
         <Btn cmd="removeFormat" title="Xóa định dạng"><Eraser size={15} /></Btn>
       </div>
-      <div ref={ref} contentEditable suppressContentEditableWarning className="p-3.5 text-sm outline-none" style={{ minHeight: 180, lineHeight: 1.6 }} onInput={() => onChange(ref.current?.innerHTML ?? '')} />
+      {(template || (variables && variables.length > 0)) && (
+        <div className="flex flex-wrap items-center gap-1.5 px-2 py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+          {template && <button type="button" className="btn btn-sm" onMouseDown={(e) => { e.preventDefault(); if (!ref.current?.textContent?.trim() || window.confirm('Chèn mẫu web vào vị trí con trỏ?')) exec('insertHTML', template); }}><FilePlus2 size={13} />Chèn mẫu web</button>}
+          {variables?.map(([t, l]) => <button key={t} type="button" className="chip" title={t} onMouseDown={(e) => { e.preventDefault(); exec('insertText', t); }}>{l}</button>)}
+        </div>
+      )}
+      <div ref={ref} contentEditable suppressContentEditableWarning className="np-content p-3.5 text-sm outline-none" style={{ minHeight: 220, lineHeight: 1.6 }} onInput={emit} />
     </div>
   );
 }
 
-const MM = 3.78;
 function renderPreview(html: string, f: any, qrUrl: string) {
   const p = f.product ?? {};
   const map: Record<string, string> = {
@@ -261,26 +293,6 @@ function renderPreview(html: string, f: any, qrUrl: string) {
   return (html || '<span style="color:#98A2B6">Nội dung nhãn phụ sẽ hiển thị ở đây…</span>').replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, k) => map[k.toLowerCase()] ?? '');
 }
 
-function PreviewStep({ f, setF, qrUrl }: any) {
-  const [w, h] = (f.labelSize || '80x50').split('x').map(Number);
-  const land = f.orientation === 'landscape';
-  const pw = (land ? h : w) * MM, ph = (land ? w : h) * MM;
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-3 items-end">
-        <L label="Kích thước (rộng x cao mm)"><select className="input" value={SIZES.includes(f.labelSize) ? f.labelSize : 'custom'} onChange={(e) => e.target.value !== 'custom' && setF({ ...f, labelSize: e.target.value })}>{SIZES.map((s) => <option key={s} value={s}>{s} mm</option>)}<option value="custom">Tùy chỉnh</option></select></L>
-        <L label="Tùy chỉnh"><input className="input mono" style={{ width: 110 }} value={f.labelSize} onChange={(e) => setF({ ...f, labelSize: e.target.value })} placeholder="90x60" /></L>
-        <SegmentedControl value={f.orientation} onChange={(v: string) => setF({ ...f, orientation: v })} options={[{ value: 'portrait', label: 'Dọc' }, { value: 'landscape', label: 'Ngang' }]} />
-      </div>
-      <div className="grid place-items-center p-5 rounded-2xl" style={{ background: 'var(--surface)' }}>
-        <div style={{ width: pw, minHeight: ph, background: '#fff', color: '#111', border: '1px solid #ccc', borderRadius: 6, padding: 10, boxShadow: 'var(--shadow-md)', overflow: 'hidden' }}>
-          <div className="text-[10px]" style={{ color: '#111' }} dangerouslySetInnerHTML={{ __html: renderPreview(f.contentHtml, f, qrUrl) }} />
-        </div>
-      </div>
-      <p className="text-[12px] text-[var(--muted)] text-center">Xem trước gần đúng khi in / khi người dùng cuối xem. Biến động đã được thay bằng dữ liệu thật.</p>
-    </div>
-  );
-}
 
 function PublishStep({ f, setF }: any) {
   return (
@@ -291,7 +303,6 @@ function PublishStep({ f, setF }: any) {
         <Row k="GTIN" v={f.product?.gtin} mono />
         <Row k="Phạm vi" v={SCOPE[f.scope]} />
         {f.batchCode && <Row k="Lô" v={f.batchCode} mono />}
-        <Row k="Kích thước" v={`${f.labelSize} mm · ${f.orientation === 'landscape' ? 'ngang' : 'dọc'}`} />
       </div>
       <p className="text-[12px] text-[var(--muted)]">Xuất bản sẽ hiển thị nhãn phụ như một tab trên trang QR công khai của sản phẩm và tạo một phiên bản mới.</p>
     </div>

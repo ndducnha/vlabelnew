@@ -60,7 +60,7 @@ export default function Products() {
                 {canEdit && <button className="btn btn-sm" onClick={() => setEditProduct(p)}><Pencil size={13} />Sửa</button>}
                 <button className="btn btn-sm" onClick={() => setTraceProduct(p)}><History size={13} />Truy xuất</button>
                 <button className="btn btn-sm" onClick={() => setQrProduct(p)}><QrCode size={13} />Tải QR</button>
-                <a className="btn btn-sm" href={`/t/${p.gtin}`} target="_blank" rel="noreferrer">Trang QR</a>
+                <a className="btn btn-sm" href={`/t/${p.gtin}`} target="_blank" rel="noreferrer">Xem</a>
                 {canEdit && <button className="btn btn-sm" title="Đồng bộ lên Cổng truy xuất nguồn gốc quốc gia" disabled={sync.isPending} onClick={() => sync.mutate(p.id)}><UploadCloud size={13} />Đồng bộ</button>}
                 {canEdit && <button className="btn btn-sm btn-danger" title="Xoá sản phẩm" onClick={() => { if (window.confirm(`Xoá sản phẩm "${p.name}"?`)) del.mutate(p.id); }}><Trash2 size={13} /></button>}
               </div>
