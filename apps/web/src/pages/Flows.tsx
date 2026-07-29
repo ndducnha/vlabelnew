@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GitBranch, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, Eye, EyeOff, Users, Rocket, User, MapPin, Clock, FileText, Image, Search, Copy, Pencil, Check, Building2, Layers, ShieldCheck } from 'lucide-react';
+import { GitBranch, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, Eye, EyeOff, Rocket, User, MapPin, Clock, FileText, Image, Search, Copy, Pencil, Check, Building2, Layers } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -42,7 +42,6 @@ export default function Flows() {
   const [sel, setSel] = useState<any | null>(null);
   const [tab, setTab] = useState<'fields' | 'perm' | 'public'>('fields');
   const [newFlow, setNewFlow] = useState({ name: '', code: '' });
-  const [permFlow, setPermFlow] = useState<any | null>(null);
   const [editFlow, setEditFlow] = useState<any | null>(null);
   const [selCtx, setSelCtx] = useState<any | null>(null);
 
@@ -136,7 +135,6 @@ export default function Flows() {
                   {canManage && <div className="flex items-center gap-1.5 flex-wrap">
                     <button className="btn btn-sm" onClick={() => setEditFlow({ id: flow.id, name: flow.name, code: flow.code, organizationIds: (flow.orgLinks ?? []).map((l: any) => l.organizationId) })}><Pencil size={14} />Sửa</button>
                     <button className="btn btn-sm" onClick={() => mClone.mutate(flow.id)}><Copy size={14} />Nhân bản</button>
-                    <button className="btn btn-sm" onClick={() => setPermFlow(flow)}><Users size={14} />Phân quyền khai</button>
                     {!version?.isPublished && <button className="btn btn-sm btn-primary" onClick={() => mPublish.mutate(flow.id)}><Rocket size={14} />Xuất bản</button>}
                     <button className="btn btn-sm btn-danger" title="Xoá flow" onClick={() => {
                       const nOrg = orgNames.length; const nProd = flow._count?.products ?? 0;
@@ -248,7 +246,7 @@ export default function Flows() {
 
             {tab === 'perm' && (
               <div>
-                <p className="text-sm text-[var(--muted)] mb-3">Vai trò nào được nhập sự kiện này? (ngoài ra có thể gán riêng theo người ở “Phân quyền khai”).</p>
+                <p className="text-sm text-[var(--muted)] mb-3">Vai trò nào được nhập sự kiện này? Quyền theo từng người được gán khi gán flow vào sản phẩm hoặc khi tạo lịch truy xuất.</p>
                 <div className="flex flex-wrap gap-2">
                   {ASSIGNABLE_ROLES.map((rk) => {
                     const on = (sel.enterRoleKeys ?? []).includes(rk);
@@ -346,7 +344,6 @@ export default function Flows() {
       </Drawer>
 
       {/* Flow permission assignment drawer */}
-      {permFlow && <FlowPermissions flow={permFlow} onClose={() => setPermFlow(null)} />}
     </>
   );
 }
@@ -363,65 +360,3 @@ function AddEvent({ onAdd }: { onAdd: (name: string, code: string) => void }) {
   );
 }
 
-function FlowPermissions({ flow, onClose }: { flow: any; onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const [q, setQ] = useState('');
-  const [scope, setScope] = useState(''); // '' = toàn flow; ngược lại = eventDefinitionId
-  const perms = useQuery({ queryKey: ['flow-perms', flow.id], queryFn: () => api.get(`/flows/${flow.id}/permissions`).then((r) => r.data) });
-  const detail = useQuery({ queryKey: ['flow-detail', flow.id], queryFn: () => api.get(`/flows/${flow.id}`).then((r) => r.data) });
-  const events = detail.data?.versions?.[0]?.eventDefinitions ?? [];
-  const search = useQuery({
-    queryKey: ['users-branch', q], enabled: q.trim().length > 0,
-    queryFn: () => api.get('/users/branch', { params: { q } }).then((r) => r.data),
-  });
-  const inv = () => qc.invalidateQueries({ queryKey: ['flow-perms', flow.id] });
-  const add = useMutation({ mutationFn: (userId: string) => api.post(`/flows/${flow.id}/permissions`, { userId, eventDefinitionId: scope || undefined }), onSuccess: () => { toast('Đã cấp quyền khai'); setQ(''); inv(); }, onError: (e) => toast(apiError(e), false) });
-  const del = useMutation({ mutationFn: (id: string) => api.delete(`/flow-permissions/${id}`), onSuccess: () => { toast('Đã gỡ'); inv(); } });
-  const scopeLabel = (p: any) => (p.eventDefinitionId ? `Sự kiện: ${p.eventDefinition?.name ?? '—'}` : 'Toàn quy trình');
-
-  return (
-    <Drawer open onClose={onClose} title={<><b>Phân quyền khai</b><div className="text-xs text-[var(--muted)]">{flow.name}</div></>}>
-      <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--faint)] mb-2">Đã cấp quyền ({(perms.data ?? []).length})</div>
-      <div className="flex flex-col gap-2 mb-5">
-        {(perms.data ?? []).length === 0 && <p className="text-sm text-[var(--muted)]">Chưa cấp cho ai. Chọn phạm vi và tìm người bên dưới để cấp.</p>}
-        {(perms.data ?? []).map((p: any) => (
-          <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ border: '1px solid var(--border)', background: 'var(--card)' }}>
-            <div className="flex-1 min-w-0">
-              <b className="text-[13.5px]">{p.user.fullName}</b>
-              <div className="text-[11.5px] text-[var(--muted)]">{p.user.email}</div>
-              <span className={`chip mt-1.5 ${p.eventDefinitionId ? '' : 'chip-accent'}`} style={{ fontSize: 10.5 }}>{p.eventDefinitionId ? <Layers size={11} /> : <ShieldCheck size={11} />}{scopeLabel(p)}</span>
-            </div>
-            <button className="btn btn-sm btn-danger" onClick={() => del.mutate(p.id)}>Gỡ</button>
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-xl p-3.5 mb-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-        <div className="text-[11px] font-bold uppercase tracking-wide text-[var(--faint)] mb-2.5">Cấp thêm</div>
-        <label className="block mb-3"><span className="label">Phạm vi cấp quyền</span>
-          <select className="input" value={scope} onChange={(e) => setScope(e.target.value)}>
-            <option value="">Toàn quy trình (mọi sự kiện)</option>
-            {events.map((ev: any) => <option key={ev.id} value={ev.id}>Sự kiện: {ev.name}</option>)}
-          </select>
-          <span className={`chip mt-2 ${scope ? '' : 'chip-accent'}`} style={{ fontSize: 10.5 }}>{scope ? <Layers size={11} /> : <ShieldCheck size={11} />}{scope ? `Sự kiện: ${events.find((e: any) => e.id === scope)?.name ?? ''}` : 'Toàn quy trình'}</span>
-        </label>
-        <div className="flex items-center gap-2 rounded-full px-3.5 h-11" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
-          <Search size={15} className="text-[var(--muted)]" />
-          <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm theo tên / email rồi cấp…" value={q} onChange={(e) => setQ(e.target.value)} />
-        </div>
-      </div>
-      {q.trim().length > 0 && (
-        <div className="flex flex-col gap-2 mt-2">
-          {(search.data ?? []).map((u: any) => (
-            <div key={u.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ border: '1px solid var(--border)', background: 'var(--card)' }}>
-              <div className="flex-1 min-w-0"><b className="text-[13.5px]">{u.fullName}</b><div className="text-[11.5px] text-[var(--muted)]">{u.email}{u.organization?.name ? ` · ${u.organization.name}` : ''}</div></div>
-              <button className="btn btn-sm btn-primary" onClick={() => add.mutate(u.id)}>Cấp</button>
-            </div>
-          ))}
-          {!search.isLoading && (search.data ?? []).length === 0 && <p className="text-sm text-[var(--muted)]">Không tìm thấy.</p>}
-        </div>
-      )}
-    </Drawer>
-  );
-}

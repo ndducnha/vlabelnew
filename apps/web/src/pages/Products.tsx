@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History } from 'lucide-react';
+import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History, Search } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -213,7 +213,55 @@ function EditProduct({ product, onClose }: { product: any; onClose: () => void }
         </div>
       )}
       <div className="text-xs text-[var(--muted)] mt-2.5">{flowId ? '' : 'Chưa chọn nghĩa là bỏ gán Flow.'}</div>
+
+      {flowId && (
+        <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+          <span className="label">Người được kê khai flow này</span>
+          <div className="text-[11.5px] text-[var(--muted)] mb-2">Cấp quyền khai theo người ngay tại đây (hoặc tự động khi giao Lịch truy xuất).</div>
+          <FlowEnterers flowId={flowId} />
+        </div>
+      )}
     </Drawer>
+  );
+}
+
+function FlowEnterers({ flowId }: { flowId: string }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  const [q, setQ] = useState('');
+  const perms = useQuery({ queryKey: ['flow-perms', flowId], queryFn: () => api.get(`/flows/${flowId}/permissions`).then((r) => r.data) });
+  const search = useQuery({ queryKey: ['users-branch', q], enabled: q.trim().length > 0, queryFn: () => api.get('/users/branch', { params: { q } }).then((r) => r.data) });
+  const inv = () => qc.invalidateQueries({ queryKey: ['flow-perms', flowId] });
+  const add = useMutation({ mutationFn: (userId: string) => api.post(`/flows/${flowId}/permissions`, { userId }), onSuccess: () => { toast('Đã cấp quyền kê khai'); setQ(''); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const del = useMutation({ mutationFn: (id: string) => api.delete(`/flow-permissions/${id}`), onSuccess: () => { toast('Đã gỡ'); inv(); } });
+  const flowPerms = (perms.data ?? []).filter((p: any) => !p.eventDefinitionId);
+  const assigned = new Set(flowPerms.map((p: any) => p.user.id));
+  const results = (search.data ?? []).filter((u: any) => !assigned.has(u.id));
+  return (
+    <div className="flex flex-col gap-2">
+      {flowPerms.length === 0 && <p className="text-xs text-[var(--muted)]">Chưa cấp cho ai. Tìm người bên dưới để cho phép kê khai.</p>}
+      {flowPerms.map((p: any) => (
+        <div key={p.id} className="flex items-center gap-2 p-2.5 rounded-xl" style={{ border: '1px solid var(--border)' }}>
+          <div className="flex-1 min-w-0"><b className="text-[13px]">{p.user.fullName}</b><div className="text-[11px] text-[var(--muted)] truncate">{p.user.email}</div></div>
+          <button className="btn btn-sm btn-danger" onClick={() => del.mutate(p.id)}><Trash2 size={12} /></button>
+        </div>
+      ))}
+      <div className="flex items-center gap-2 rounded-full px-3.5 py-2" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+        <Search size={15} className="text-[var(--muted)]" />
+        <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm người để cho phép kê khai…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </div>
+      {q.trim().length > 0 && (
+        <div className="flex flex-col gap-1.5">
+          {results.map((u: any) => (
+            <div key={u.id} className="flex items-center gap-2 p-2.5 rounded-xl" style={{ border: '1px solid var(--border)' }}>
+              <div className="flex-1 min-w-0"><b className="text-[13px]">{u.fullName}</b><div className="text-[11px] text-[var(--muted)] truncate">{u.email}{u.organization?.name ? ` · ${u.organization.name}` : ''}</div></div>
+              <button className="btn btn-sm btn-primary" onClick={() => add.mutate(u.id)}>Cho phép</button>
+            </div>
+          ))}
+          {!search.isLoading && results.length === 0 && <p className="text-xs text-[var(--muted)]">Không tìm thấy.</p>}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -37,6 +37,16 @@ export class TraceTasksService {
       },
       include: INCLUDE,
     });
+    // Giao nhiệm vụ = cấp quyền kê khai: người được giao được phép kê khai flow tương ứng.
+    let grantFlowId = dto.flowId ?? null;
+    if (!grantFlowId) {
+      const pf = await this.prisma.productFlow.findFirst({ where: { productId: dto.productId } });
+      grantFlowId = pf?.flowId ?? null;
+    }
+    if (grantFlowId) {
+      const exists = await this.prisma.flowPermission.findFirst({ where: { userId: dto.assignedUserId, flowId: grantFlowId, eventDefinitionId: null } });
+      if (!exists) await this.prisma.flowPermission.create({ data: { tenantId: user.tenantId, userId: dto.assignedUserId, flowId: grantFlowId } });
+    }
     await this.audit.log({ tenantId: user.tenantId, actorUserId: user.sub, action: 'CREATE', resource: 'trace_task', resourceId: task.id, meta: { assignedUserId: dto.assignedUserId } });
     return task;
   }
