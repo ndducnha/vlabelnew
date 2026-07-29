@@ -1,0 +1,675 @@
+// Vlabel — Prisma schema (PostgreSQL). Đa tenant, soft delete.
+// Mô hình: Product(GTIN) -> TraceableItem -> Flow(version) -> Event(Definition) -> EventRecord.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────── Enums ───────────────
+enum ProductSource {
+  MANUAL
+  VNPC
+}
+
+enum RecordStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+  LOCKED
+}
+
+enum QrStatus {
+  ACTIVE
+  LOCKED
+  REVOKED
+}
+
+enum ApprovalAction {
+  SUBMIT
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+  LOCK
+}
+
+// ─────────────── Tenant & tổ chức ───────────────
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  status    String   @default("ACTIVE")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  organizations Organization[]
+  users         User[]
+  roles         Role[]
+  categories    ProductCategory[]
+  products      Product[]
+  flows         Flow[]
+  traceableItems TraceableItem[]
+  eventRecords  EventRecord[]
+  qrCodes       QrCode[]
+  vnpcSyncLogs  VnpcSyncLog[]
+  auditLogs     AuditLog[]
+  traceTasks    TraceTask[]
+  productBatches ProductBatch[]
+
+  @@map("tenants")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  type      String   // ORG_TYPES (không hard-code số tầng)
+  parentId  String?
+  level     Int      @default(0)
+  sortOrder Int      @default(0)
+  status    String   @default("ACTIVE")
+  settings  Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  parent   Organization? @relation("OrgTree", fields: [parentId], references: [id])
+  children Organization[] @relation("OrgTree")
+
+  users          User[]
+  scopes         UserScope[]
+  products       Product[]
+  traceableItems TraceableItem[]
+  eventRecords   EventRecord[]
+  flowLinks      FlowOrganization[]
+  traceTasks     TraceTask[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, parentId])
+  @@map("organizations")
+}
+
+// ─────────────── Người dùng & RBAC ───────────────
+model User {
+  id             String   @id @default(uuid())
+  tenantId       String
+  organizationId String?
+  email          String
+  passwordHash   String
+  fullName       String
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  roles         UserRole[]
+  scopes        UserScope[]
+  refreshTokens RefreshToken[]
+
+  performedRecords EventRecord[] @relation("PerformedBy")
+  enteredRecords   EventRecord[] @relation("EnteredBy")
+  approvedRecords  EventRecord[] @relation("ApprovedBy")
+  approvalHistories ApprovalHistory[]
+  auditLogs        AuditLog[]
+  flowPermissions  FlowPermission[]
+  assignedTasks    TraceTask[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, organizationId])
+  @@map("users")
+}
+
+model Role {
+  id        String  @id @default(uuid())
+  tenantId  String
+  key       String  // ROLES.*
+  name      String
+  isSystem  Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  userRoles   UserRole[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, key])
+  @@map("roles")
+}
+
+model Permission {
+  id    String @id @default(uuid())
+  key   String @unique // resource:action
+  label String
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// Giới hạn phạm vi user theo organization (và cây con).
+model UserScope {
+  id             String @id @default(uuid())
+  userId         String
+  organizationId String
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@map("user_scopes")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+// ─────────────── Category & field động ───────────────
+model ProductCategory {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  fields   CategoryField[]
+  products Product[]
+
+  @@unique([tenantId, code])
+  @@map("product_categories")
+}
+
+model CategoryField {
+  id         String  @id @default(uuid())
+  categoryId String
+  key        String
+  label      String
+  type       String  // FIELD_TYPES
+  required   Boolean @default(false)
+  options    Json    @default("[]")
+  order      Int     @default(0)
+
+  category ProductCategory @relation(fields: [categoryId], references: [id])
+
+  @@unique([categoryId, key])
+  @@map("category_fields")
+}
+
+// ─────────────── Product ───────────────
+model Product {
+  id                String        @id @default(uuid())
+  tenantId          String
+  organizationId    String
+  categoryId        String?
+  gtin              String
+  name              String
+  description       String?
+  image             String?
+  // SHARED = một QR chung, phân định bằng lô/ngày SX; PER_LOT = mỗi lô/ngày SX một QR riêng.
+  traceMode         String        @default("SHARED")
+  dynamicAttributes Json          @default("{}")
+
+  // ── Nhãn điện tử (e-label) theo Nghị định 37/2026/NĐ-CP ──
+  brand            String?
+  countryOfOrigin  String?
+  hsCode           String?
+  targetMarket     String?
+  supplier         String?
+  // Nhóm thông tin bắt buộc trên nhãn (NĐ 37/2026)
+  netContent          String?  // Định lượng (khối lượng/thể tích/số lượng)
+  ingredients         String?  // Thành phần / cấu tạo
+  usageInstructions   String?  // Hướng dẫn sử dụng
+  storageInstructions String?  // Hướng dẫn bảo quản
+  safetyWarnings      String?  // Cảnh báo an toàn
+  riskLevel        Int      @default(0) // 0 chưa xác định, 1 cao, 2 trung bình, 3 thấp
+  elabelStatus     String   @default("draft") // draft | published | recalled
+  recallReason     String?
+  labelImages      Json     @default("[]") // [{ url, note, source }]
+  certificates     Json     @default("[]") // [url]
+  labelAttributes  Json     @default("[]") // "Thông tin khác": [{ field_name, field_value }]
+  // Phụ lục I NĐ 37: nhóm hàng hóa + giá trị các trường bắt buộc theo nhóm
+  appendixGroup      String? // mã nhóm hàng hóa (APPENDIX_GROUPS.code)
+  appendixAttributes Json    @default("{}") // { fieldKey: value }
+  ownerInfo        Json     @default("{}") // tổ chức chịu trách nhiệm: { name, tax_code, address, representative }
+  // Truy xuất nguồn gốc + Cổng quốc gia (bắt buộc cho hàng rủi ro cao)
+  portalConnected  Boolean  @default(false) // đã kết nối/chia sẻ dữ liệu với Cổng truy xuất quốc gia
+  portalSyncedAt   DateTime?
+  publishedAt      DateTime?
+  source            ProductSource @default(MANUAL)
+  sourceReference   String?
+  sourceSyncedAt    DateTime?
+  sourceSnapshot    Json?
+  status            String        @default("ACTIVE")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  category       ProductCategory? @relation(fields: [categoryId], references: [id])
+  traceableItems TraceableItem[]
+  flows          ProductFlow[]
+  traceTasks     TraceTask[]
+  batches        ProductBatch[]
+
+  @@unique([tenantId, gtin]) // chống trùng GTIN trong tenant (§2)
+  @@index([tenantId, organizationId])
+  @@map("products")
+}
+
+// ─────────────── Flow & Event ───────────────
+model Flow {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  categoryId String?
+  publicConfig Json  @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant        @relation(fields: [tenantId], references: [id])
+  versions FlowVersion[]
+  permissions FlowPermission[]
+  products ProductFlow[]
+  orgLinks FlowOrganization[]
+  traceTasks TraceTask[]
+
+  @@unique([tenantId, code])
+  @@map("flows")
+}
+
+// Nhiệm vụ / lịch truy xuất: trigger giao việc kê khai cho một người,
+// theo sản phẩm/lô/flow/tổ chức trong khoảng thời gian.
+model TraceTask {
+  id              String   @id @default(uuid())
+  tenantId        String
+  name            String?
+  productId       String
+  lot             String?
+  flowId          String?
+  organizationId  String?
+  assignedUserId  String
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("PENDING") // PENDING | IN_PROGRESS | DONE
+  note            String?
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  product      Product       @relation(fields: [productId], references: [id])
+  assignedUser User          @relation(fields: [assignedUserId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  flow         Flow?         @relation(fields: [flowId], references: [id])
+
+  @@index([tenantId, assignedUserId])
+  @@map("trace_tasks")
+}
+
+model FlowVersion {
+  id          String   @id @default(uuid())
+  flowId      String
+  version     Int      @default(1)
+  isPublished Boolean  @default(false)
+  completionRule Json  @default("{}")
+  createdAt   DateTime @default(now())
+
+  flow             Flow              @relation(fields: [flowId], references: [id])
+  eventDefinitions EventDefinition[]
+  eventRecords     EventRecord[]
+
+  @@unique([flowId, version])
+  @@map("flow_versions")
+}
+
+model EventDefinition {
+  id            String  @id @default(uuid())
+  flowVersionId String
+  name          String
+  code          String
+  order         Int     @default(0)
+  required      Boolean @default(true)
+  allowRepeat   Boolean @default(false)
+  // phân quyền theo role key + điều kiện trước + gợi ý
+  enterRoleKeys  Json   @default("[]")
+  approveRoleKeys Json  @default("[]")
+  preconditions  Json   @default("[]")
+  suggestionConfig Json @default("{}")
+  // Hiển thị công khai cho 5 yếu tố GS1 EPCIS + bật/tắt cả sự kiện.
+  publicConfig   Json   @default("{\"event\": true, \"who\": true, \"where\": true, \"when\": true, \"media\": true}")
+
+  flowVersion FlowVersion  @relation(fields: [flowVersionId], references: [id])
+  fields      EventField[]
+  records     EventRecord[]
+  flowPermissions FlowPermission[]
+
+  @@unique([flowVersionId, code])
+  @@map("event_definitions")
+}
+
+model EventField {
+  id                String  @id @default(uuid())
+  eventDefinitionId String
+  key               String
+  label             String
+  type              String  // FIELD_TYPES
+  required          Boolean @default(false)
+  options           Json    @default("[]")
+  order             Int     @default(0)
+  publicVisible     Boolean @default(false)
+
+  eventDefinition EventDefinition @relation(fields: [eventDefinitionId], references: [id])
+
+  @@unique([eventDefinitionId, key])
+  @@map("event_fields")
+}
+
+// ─────────────── Traceable Item ───────────────
+model TraceableItem {
+  id             String   @id @default(uuid())
+  tenantId       String
+  organizationId String
+  productId      String
+  gtin           String
+  batchOrLot     String?
+  serialNumber   String?
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  deletedAt      DateTime?
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  product      Product      @relation(fields: [productId], references: [id])
+  eventRecords EventRecord[]
+  qrCodes      QrCode[]
+
+  @@index([tenantId, gtin])
+  @@map("traceable_items")
+}
+
+// ─────────────── Event Record ───────────────
+model EventRecord {
+  id                String       @id @default(uuid())
+  tenantId          String
+  organizationId    String?
+  traceableItemId   String
+  flowVersionId     String
+  eventDefinitionId String
+  gtin              String
+  performedByUserId String?
+  performedByName   String?
+  enteredByUserId   String?
+  approvedByUserId  String?
+  location          String?
+  gpsLat            Float?
+  gpsLng            Float?
+  performedAt       DateTime?
+  action            String?
+  status            RecordStatus @default(DRAFT)
+  lockedAt          DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  deletedAt         DateTime?
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  organization    Organization?   @relation(fields: [organizationId], references: [id])
+  traceableItem   TraceableItem   @relation(fields: [traceableItemId], references: [id])
+  flowVersion     FlowVersion     @relation(fields: [flowVersionId], references: [id])
+  eventDefinition EventDefinition @relation(fields: [eventDefinitionId], references: [id])
+  performedBy     User?           @relation("PerformedBy", fields: [performedByUserId], references: [id])
+  enteredBy       User?           @relation("EnteredBy", fields: [enteredByUserId], references: [id])
+  approvedBy      User?           @relation("ApprovedBy", fields: [approvedByUserId], references: [id])
+
+  values   EventRecordValue[]
+  media    EventRecordMedia[]
+  approvals ApprovalHistory[]
+
+  @@index([tenantId, traceableItemId])
+  @@index([tenantId, status])
+  @@map("event_records")
+}
+
+model EventRecordValue {
+  id            String @id @default(uuid())
+  eventRecordId String
+  fieldKey      String
+  valueJson     Json
+
+  eventRecord EventRecord @relation(fields: [eventRecordId], references: [id])
+
+  @@unique([eventRecordId, fieldKey])
+  @@map("event_record_values")
+}
+
+model EventRecordMedia {
+  id            String @id @default(uuid())
+  eventRecordId String
+  kind          String // image | video | file
+  url           String
+  fileName      String?
+  mimeType      String?
+  sizeBytes     Int?
+  publicVisible Boolean @default(false)
+  createdAt     DateTime @default(now())
+
+  eventRecord EventRecord @relation(fields: [eventRecordId], references: [id])
+
+  @@map("event_record_media")
+}
+
+model ApprovalHistory {
+  id            String         @id @default(uuid())
+  eventRecordId String
+  actorUserId   String?
+  action        ApprovalAction
+  comment       String?
+  fromStatus    RecordStatus?
+  toStatus      RecordStatus?
+  createdAt     DateTime       @default(now())
+
+  eventRecord EventRecord @relation(fields: [eventRecordId], references: [id])
+  actor       User?       @relation(fields: [actorUserId], references: [id])
+
+  @@index([eventRecordId])
+  @@map("approval_histories")
+}
+
+// ─────────────── QR ───────────────
+model QrCode {
+  id              String   @id @default(uuid())
+  tenantId        String
+  gtin            String
+  lot             String?
+  serial          String?
+  publicUrl       String   // /t/{gtin}?lot=&serial=
+  status          QrStatus @default(ACTIVE)
+  traceableItemId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id])
+  traceableItem TraceableItem? @relation(fields: [traceableItemId], references: [id])
+  assignment    QrAssignment?
+  scanLogs      QrScanLog[]
+
+  @@index([tenantId, gtin])
+  @@map("qr_codes")
+}
+
+model QrAssignment {
+  id              String   @id @default(uuid())
+  qrCodeId        String   @unique
+  traceableItemId String
+  assignedAt      DateTime @default(now())
+
+  qrCode QrCode @relation(fields: [qrCodeId], references: [id])
+
+  @@map("qr_assignments")
+}
+
+model QrScanLog {
+  id        String   @id @default(uuid())
+  qrCodeId  String
+  ipHash    String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  qrCode QrCode @relation(fields: [qrCodeId], references: [id])
+
+  @@index([qrCodeId])
+  @@map("qr_scan_logs")
+}
+
+// ─────────────── Tích hợp & audit ───────────────
+model VnpcSyncLog {
+  id           String   @id @default(uuid())
+  tenantId     String?
+  operation    String   // search | get | import
+  query        String?
+  gtin         String?
+  status       String   // OK | ERROR | FALLBACK
+  httpStatus   Int?
+  durationMs   Int?
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("vnpc_sync_logs")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  tenantId    String?
+  actorUserId String?
+  action      String
+  resource    String
+  resourceId  String?
+  meta        Json     @default("{}")
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id])
+  actor  User?   @relation(fields: [actorUserId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+// Phân quyền theo luồng: user nào được khai Flow nào (và tùy chọn Event cụ thể).
+// eventDefinitionId = null → được khai toàn bộ Event của Flow.
+model FlowPermission {
+  id                String   @id @default(uuid())
+  tenantId          String
+  userId            String
+  flowId            String
+  eventDefinitionId String?
+  createdAt         DateTime @default(now())
+
+  user            User             @relation(fields: [userId], references: [id])
+  flow            Flow             @relation(fields: [flowId], references: [id])
+  eventDefinition EventDefinition? @relation(fields: [eventDefinitionId], references: [id])
+
+  @@unique([userId, flowId, eventDefinitionId])
+  @@index([tenantId, flowId])
+  @@map("flow_permissions")
+}
+
+// Khai báo: đối tượng (Product) dùng những Flow nào (§ trang cấu hình TXNG).
+// Lô nhãn điện tử (cấp lô). Mỗi lô sinh một QR riêng trỏ về trang landing GS1.
+model ProductBatch {
+  id                String    @id @default(uuid())
+  tenantId          String
+  productId         String
+  batchCode         String
+  manufacturingDate DateTime?
+  totalQuantity     Int?
+  status            String    @default("draft") // draft | published | recalled
+  recallReason      String?
+  traceabilityUrl   String?
+  attributes        Json      @default("[]") // phụ lục theo lô: [{ field_code, field_name, field_value }]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, productId])
+  @@map("product_batches")
+}
+
+model ProductFlow {
+  productId String
+  flowId    String
+
+  product Product @relation(fields: [productId], references: [id])
+  flow    Flow    @relation(fields: [flowId], references: [id])
+
+  @@id([productId, flowId])
+  @@map("product_flows")
+}
+
+// Một Flow có thể thuộc NHIỀU tổ chức / bộ phận (nhiều-nhiều).
+model FlowOrganization {
+  flowId         String
+  organizationId String
+
+  flow         Flow         @relation(fields: [flowId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([flowId, organizationId])
+  @@index([organizationId])
+  @@map("flow_organizations")
+}
