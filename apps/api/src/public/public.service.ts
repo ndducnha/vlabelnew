@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { createHash } from 'crypto';
+import * as QRCode from 'qrcode';
 import { validateGtin, appendixGroupByCode } from '@vlabel/shared';
+import { sanitizeHtml, renderVars } from '../supplementary-labels/supplementary-labels.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Trả dữ liệu công khai cho trang tra cứu QR. Chỉ dữ liệu APPROVED/LOCKED + field public. */
@@ -84,6 +86,8 @@ export class PublicService {
         company: product.organization?.name ?? null,
       },
       item: item ? { batchOrLot: item.batchOrLot, serialNumber: item.serialNumber } : null,
+      // Nhãn phụ (supplementary): chỉ hiện khi doanh nghiệp đã xuất bản và khớp phạm vi GTIN/lô/serial.
+      supplementary: await this.resolveSupplementary(product, lot, serial),
       // Nhãn điện tử: chỉ trả khi đã công bố (published) hoặc thu hồi (recalled, kèm banner). Draft không công khai.
       label: ['published', 'recalled'].includes(product.elabelStatus)
         ? {
@@ -126,5 +130,30 @@ export class PublicService {
         : null,
       timeline,
     };
+  }
+
+  private async resolveSupplementary(product: any, lot?: string, serial?: string) {
+    const list = await this.prisma.supplementaryLabel.findMany({ where: { productId: product.id, status: 'published', deletedAt: null } });
+    if (!list.length) return null;
+    const match =
+      (lot ? list.find((s) => s.scope === 'BATCH' && s.batchCode === lot) : undefined) ??
+      (serial ? list.find((s) => s.scope === 'ITEM' && s.serial === serial) : undefined) ??
+      list.find((s) => s.scope === 'ALL') ?? list[0];
+    if (!match) return null;
+    const owner = (product.ownerInfo as any) ?? {};
+    let qrImg = '';
+    if (match.contentHtml.includes('{{qr_code}}')) {
+      const base = process.env.PUBLIC_BASE_URL ?? 'http://localhost:5173';
+      const url = `${base}/t/${product.gtin}${lot ? `?lot=${encodeURIComponent(lot)}` : ''}`;
+      qrImg = `<img src="${await QRCode.toDataURL(url, { margin: 1, width: 200 })}" alt="QR" style="width:120px;height:120px" />`;
+    }
+    const html = sanitizeHtml(renderVars(match.contentHtml, {
+      product_name: product.name, gtin: product.gtin, batch_number: lot ?? match.batchCode ?? '',
+      manufacturing_date: match.manufacturingDate ? new Date(match.manufacturingDate).toLocaleDateString('vi-VN') : '',
+      expiry_date: match.expiryDate ? new Date(match.expiryDate).toLocaleDateString('vi-VN') : '',
+      manufacturer_name: owner.name ?? product.organization?.name ?? '', manufacturer_address: owner.address ?? '',
+      origin: product.countryOfOrigin ?? '', qr_code: qrImg,
+    }));
+    return { name: match.name, html, size: match.labelSize, orientation: match.orientation };
   }
 }

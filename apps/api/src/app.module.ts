@@ -25,6 +25,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { StorageModule } from './storage/storage.module';
 import { TraceTasksModule } from './trace-tasks/trace-tasks.module';
 import { ElabelsModule } from './elabels/elabels.module';
+import { SupplementaryLabelsModule } from './supplementary-labels/supplementary-labels.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ElabelsModule } from './elabels/elabels.module';
     StorageModule,
     TraceTasksModule,
     ElabelsModule,
+    SupplementaryLabelsModule,
   ],
   providers: [
     // Thứ tự: xác thực JWT → RBAC → rate limit. Global guards.

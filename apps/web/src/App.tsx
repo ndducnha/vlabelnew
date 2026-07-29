@@ -13,6 +13,7 @@ import Flows from './pages/Flows';
 import Entry from './pages/Entry';
 import TraceTasks from './pages/TraceTasks';
 import Elabels from './pages/Elabels';
+import Supplementary from './pages/Supplementary';
 import Users from './pages/Users';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/entry" element={<Entry />} />
         <Route path="/tasks" element={<TraceTasks />} />
         <Route path="/elabels" element={<Elabels />} />
+        <Route path="/supplementary" element={<Supplementary />} />
         <Route path="/users" element={<Users />} />
       </Route>
 

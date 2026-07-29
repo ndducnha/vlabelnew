@@ -12,7 +12,7 @@ export default function PublicTrace() {
   const [sp] = useSearchParams();
   const lot = sp.get('lot') ?? undefined;
   const serial = sp.get('serial') ?? undefined;
-  const [tab, setTab] = useState<'sp' | 'dn' | 'tx'>('sp');
+  const [tab, setTab] = useState<'sp' | 'dn' | 'tx' | 'np'>('sp');
 
   const q = useQuery({
     queryKey: ['trace', gtin, lot, serial],
@@ -33,6 +33,7 @@ export default function PublicTrace() {
   const TABS = [
     { k: 'sp' as const, label: 'Sản phẩm', icon: Package },
     { k: 'dn' as const, label: 'Doanh nghiệp', icon: Building2 },
+    ...(d.supplementary ? [{ k: 'np' as const, label: 'Nhãn phụ', icon: FileText }] : []),
     { k: 'tx' as const, label: 'Truy xuất', icon: Leaf },
   ];
 
@@ -185,6 +186,13 @@ export default function PublicTrace() {
                 <p className="text-sm">{label?.company ?? d.product.company ?? '—'}</p>
               </div>
             </>
+          )}
+
+          {tab === 'np' && d.supplementary && (
+            <div className="card p-4">
+              <h3 className="font-semibold mb-2.5">{d.supplementary.name}</h3>
+              <div className="text-sm np-content" style={{ lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: d.supplementary.html }} />
+            </div>
           )}
 
           {tab === 'tx' && (

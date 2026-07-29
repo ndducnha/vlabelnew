@@ -85,6 +85,11 @@ body{margin:0;background:var(--surface);color:var(--ink);
   .rows > * + *{ border-top:1px solid var(--border); }
 }
 
+/* Toolbar Rich Text Editor (nhãn phụ) */
+.ws-tb{ display:grid; place-items:center; min-width:30px; height:30px; padding:0 6px; border-radius:7px; color:var(--ink-2); font-weight:700; font-size:14px; }
+.ws-tb:hover{ background:var(--bg); }
+.ws-sep{ width:1px; height:20px; background:var(--border); margin:0 4px; }
+
 /* Card có hover nhẹ khi là link/nút */
 .card-hover{ transition:box-shadow .15s,transform .06s,border-color .15s; }
 .card-hover:hover{ box-shadow:var(--shadow-md); border-color:var(--border-strong); }

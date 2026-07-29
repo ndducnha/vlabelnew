@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Info, Network, Package, GitBranch, ClipboardEdit,
-  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard,
+  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -29,7 +29,8 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Nhãn điện tử',
     items: [
-      { to: '/elabels', label: 'Nhãn điện tử', icon: Tag, perm: PERMISSIONS.PRODUCT_CREATE },
+      { to: '/elabels', label: 'Quản lý nhãn', icon: Tag, perm: PERMISSIONS.PRODUCT_CREATE },
+      { to: '/supplementary', label: 'Nhãn phụ', icon: FileText, perm: PERMISSIONS.PRODUCT_READ },
     ],
   },
   {

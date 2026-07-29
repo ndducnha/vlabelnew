@@ -313,6 +313,19 @@ async function main() {
   await task('Kê khai lô Bình bột ABC', '893130000004', 'LOT-ABC-2408', pcccFlow, pccc.id, user, '2026-08-04', '2026-08-19', 'PENDING');
   await task('Kê khai lô Vòi chữa cháy (đã xong)', '893130000002', 'LOT-VOI-2407', pcccFlow, pccc.id, uPccc2, '2026-06-01', '2026-06-10', 'DONE');
 
+  // ── Nhãn phụ (supplementary label) demo ──
+  const mkSupp = async (body: string, name: string, scope: string, batchCode: string | null, html: string) => {
+    const p = registry[body];
+    const s = await prisma.supplementaryLabel.create({ data: { tenantId: tenant.id, productId: p.id, name, scope, batchCode, contentHtml: html, status: 'published', version: 2, createdByUserId: manager.id } });
+    await prisma.supplementaryLabelVersion.create({ data: { labelId: s.id, versionNumber: 1, contentHtml: html, createdByUserId: manager.id } });
+  };
+  await mkSupp('893110000001', 'Nhãn phụ tiếng Việt - Paracetamol', 'ALL', null,
+    '<h2>{{product_name}}</h2><p><b>Thành phần:</b> Paracetamol 500mg</p><p><b>Công dụng:</b> Giảm đau, hạ sốt.</p><p><b>Hướng dẫn sử dụng:</b> Người lớn uống 1-2 viên/lần, tối đa 8 viên/ngày.</p><p><b>Bảo quản:</b> Nơi khô ráo, dưới 30°C.</p><p><b>Xuất xứ:</b> {{origin}}</p><p><b>Chịu trách nhiệm:</b> {{manufacturer_name}}</p><p>GTIN {{gtin}} · Lô {{batch_number}}</p><p>{{qr_code}}</p>');
+  await mkSupp('893120000001', 'Nhãn phụ - Kem dưỡng lô KEM-2407', 'BATCH', 'LOT-KEM-2407',
+    '<h2>{{product_name}}</h2><p><b>Thành phần chính:</b> Hyaluronic Acid, Ceramide.</p><p><b>Hướng dẫn:</b> Thoa lượng vừa đủ lên mặt buổi tối.</p><p><b>Cảnh báo:</b> Chỉ dùng ngoài da, tránh vùng mắt.</p><p>Lô {{batch_number}} · NSX {{manufacturing_date}}</p>');
+  await mkSupp('893130000001', 'Nhãn phụ - Bình chữa cháy CO2', 'ALL', null,
+    '<h2>{{product_name}}</h2><p><b>Hướng dẫn:</b> Rút chốt an toàn, hướng loa vào gốc lửa, bóp cò.</p><p><b>Cảnh báo:</b> Kiểm định định kỳ 12 tháng/lần. Bảo quản nơi khô ráo.</p><p>GTIN {{gtin}}</p><p>{{qr_code}}</p>');
+
   for (const a of ['ORG_CREATE', 'PRODUCT_CREATE', 'ELABEL_PUBLISH', 'FLOW_CREATE', 'TRACE_TASK_CREATE', 'SEED'])
     await prisma.auditLog.create({ data: { tenantId: tenant.id, actorUserId: manager.id, action: a, resource: 'tenant', resourceId: tenant.id } });
 

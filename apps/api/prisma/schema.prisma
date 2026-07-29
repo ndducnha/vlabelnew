@@ -63,6 +63,7 @@ model Tenant {
   auditLogs     AuditLog[]
   traceTasks    TraceTask[]
   productBatches ProductBatch[]
+  supplementaryLabels SupplementaryLabel[]
 
   @@map("tenants")
 }
@@ -296,6 +297,7 @@ model Product {
   flows          ProductFlow[]
   traceTasks     TraceTask[]
   batches        ProductBatch[]
+  supplementaryLabels SupplementaryLabel[]
 
   @@unique([tenantId, gtin]) // chống trùng GTIN trong tenant (§2)
   @@index([tenantId, organizationId])
@@ -627,6 +629,53 @@ model FlowPermission {
 }
 
 // Khai báo: đối tượng (Product) dùng những Flow nào (§ trang cấu hình TXNG).
+// Nhãn phụ (supplementary label): nội dung bổ sung (thường tiếng Việt) gắn theo sản phẩm/lô/ngày SX/serial,
+// hiển thị thêm một tab trên cùng mã QR chung của sản phẩm. Không thay thế nhãn điện tử.
+model SupplementaryLabel {
+  id                String    @id @default(uuid())
+  tenantId          String
+  productId         String
+  name              String
+  scope             String    @default("ALL") // ALL | BATCH | PRODUCTION | ITEM
+  batchCode         String?
+  manufacturingDate DateTime?
+  expiryDate        DateTime?
+  packagingDate     DateTime?
+  serial            String?
+  note              String?
+  contentHtml       String    @default("")
+  labelSize         String    @default("80x50")   // rộng x cao (mm)
+  orientation       String    @default("portrait") // portrait | landscape
+  logoUrl           String?
+  status            String    @default("draft")    // draft | published | archived
+  version           Int       @default(1)
+  createdByUserId   String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  product  Product @relation(fields: [productId], references: [id])
+  versions SupplementaryLabelVersion[]
+
+  @@index([tenantId, productId])
+  @@map("supplementary_labels")
+}
+
+model SupplementaryLabelVersion {
+  id              String   @id @default(uuid())
+  labelId         String
+  versionNumber   Int
+  contentHtml     String
+  publishedAt     DateTime @default(now())
+  createdByUserId String?
+
+  label SupplementaryLabel @relation(fields: [labelId], references: [id])
+
+  @@index([labelId])
+  @@map("supplementary_label_versions")
+}
+
 // Lô nhãn điện tử (cấp lô). Mỗi lô sinh một QR riêng trỏ về trang landing GS1.
 model ProductBatch {
   id                String    @id @default(uuid())
