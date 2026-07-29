@@ -245,13 +245,13 @@ async function main() {
     'Mỹ phẩm': 'Chỉ dùng ngoài da. Ngưng dùng nếu có kích ứng. Tránh tiếp xúc mắt.',
     'Thiết bị PCCC': 'Đọc kỹ hướng dẫn. Kiểm định định kỳ. Bảo quản nơi khô ráo, tránh va đập.',
   };
-  const CAT_TO_APPENDIX: Record<string, string> = { 'Dược phẩm': 'THUOC', 'Mỹ phẩm': 'MY_PHAM', 'Thiết bị PCCC': 'PCCC' };
+  const CAT_TO_APPENDIX: Record<string, string> = { 'Dược phẩm': 'THUOC', 'Mỹ phẩm': 'MY_PHAM', 'Thiết bị PCCC': 'BHLD' };
   const appendixValues = (code: string | undefined, p: any): Record<string, string> => {
     const a = p.attrs; const dyn = (p.dyn as any) ?? {};
     const lot = p.batches?.[0]?.code ?? 'LOT-MAU'; const mfg = p.batches?.[0]?.mfg ?? '2026-07-01';
-    if (code === 'THUOC') return { active: dyn.dosage ? `${p.name} (${dyn.dosage})` : p.name, form: dyn.form ?? 'Viên nén', indication: attrGet(a, 'Chỉ định') ?? 'Theo tờ hướng dẫn sử dụng', dose: attrGet(a, 'Cách dùng') ?? 'Theo chỉ định của bác sĩ', reg_no: `VD-${p.body.slice(-5)}-26`, lot, mfg, exp: '2029-07-01', storage: attrGet(a, 'Bảo quản') ?? 'Nơi khô ráo, dưới 30°C', standard: 'TCCS' };
-    if (code === 'MY_PHAM') return { net: dyn.volume ?? '50ml', ingredients: attrGet(a, 'Thành phần chính', 'Thành phần') ?? 'Theo công bố', uses: attrGet(a, 'Công dụng') ?? 'Chăm sóc da', usage: attrGet(a, 'Hướng dẫn') ?? 'Thoa lượng vừa đủ', lot, mfg_exp: `NSX ${mfg} · HSD 36 tháng`, warning: 'Tránh tiếp xúc mắt' };
-    if (code === 'PCCC') return { specs: attrGet(a, 'Chất chữa cháy') ?? attrGet(a, 'Loại') ?? 'Theo thông số kỹ thuật', standard: attrGet(a, 'Tiêu chuẩn') ?? 'TCVN', usage: attrGet(a, 'Hướng dẫn', 'Hướng dẫn sử dụng') ?? 'Theo hướng dẫn', inspection: '12 tháng/lần', warning: 'Bảo quản nơi khô ráo, tránh va đập' };
+    if (code === 'THUOC') return { form: dyn.form ?? 'Viên nén', active: dyn.dosage ? `${p.name} (${dyn.dosage})` : p.name, maker_addr: 'Cty Dược phẩm Vlabel Pharma, KCN VSIP Bình Dương', reg_no: `VD-${p.body.slice(-5)}-26`, lot, mfg, exp: '2029-07-01', storage_cond: attrGet(a, 'Bảo quản') ?? 'Nơi khô ráo, dưới 30°C', packaging: 'Hộp 10 vỉ x 10 viên' };
+    if (code === 'MY_PHAM') return { net: dyn.volume ?? '50ml', ingredients: attrGet(a, 'Thành phần chính', 'Thành phần') ?? 'Theo công bố', lot, mfg, usage: attrGet(a, 'Hướng dẫn') ?? 'Thoa lượng vừa đủ', warning: 'Tránh tiếp xúc mắt' };
+    if (code === 'BHLD') return { net: dyn.weight ?? '1', mfg, exp: '2029-05-16', ingredients: attrGet(a, 'Chất chữa cháy') ?? 'Theo công bố', specs: attrGet(a, 'Chất chữa cháy') ?? attrGet(a, 'Loại') ?? 'Theo thông số kỹ thuật', warning: 'Bảo quản nơi khô ráo, tránh va đập', usage_storage: attrGet(a, 'Hướng dẫn', 'Hướng dẫn sử dụng') ?? 'Theo hướng dẫn; kiểm định 12 tháng/lần' };
     return {};
   };
 
@@ -294,8 +294,8 @@ async function main() {
       await prisma.qrCode.create({ data: { tenantId: tenant.id, gtin: product.gtin, publicUrl: `/t/${product.gtin}` } });
 
       if (p.status === 'recalled') {
-        await prisma.product.update({ where: { id: product.id }, data: { elabelStatus: 'recalled', recallReason: p.recallReason } });
-        await prisma.productBatch.updateMany({ where: { productId: product.id, deletedAt: null }, data: { status: 'recalled', recallReason: p.recallReason } });
+        await prisma.product.update({ where: { id: product.id }, data: { elabelStatus: 'recalled', recallReason: (p as any).recallReason } });
+        await prisma.productBatch.updateMany({ where: { productId: product.id, deletedAt: null }, data: { status: 'recalled', recallReason: (p as any).recallReason } });
       }
     }
   }

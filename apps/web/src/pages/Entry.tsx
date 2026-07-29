@@ -189,7 +189,7 @@ export default function Entry() {
         {openTasks.length > 0 && (
           <div className="card p-3.5" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}>
             <div className="flex items-center gap-2 mb-2 text-[13px] font-bold" style={{ color: 'var(--accent-ink)' }}><ClipboardList size={16} />Nhiệm vụ của bạn</div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5 overflow-y-auto pr-1" style={{ maxHeight: 176 }}>
               {openTasks.map((t: any) => (
                 <div key={t.id} className="flex items-center gap-2 flex-wrap p-2.5 rounded-xl" style={{ background: 'var(--card)' }}>
                   <div className="flex-1 min-w-[150px]">
@@ -218,7 +218,7 @@ export default function Entry() {
           <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm sản phẩm theo tên / GTIN…" value={productQ} onChange={(e) => setProductQ(e.target.value)} />
         </div>
         {products.isLoading ? <Spinner /> : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 268 }}>
             {shownProducts.map((p: any) => (
               <button key={p.id} onClick={() => selectProduct(p)} className={`opt ${product?.id === p.id ? 'sel' : ''}`}>
                 <span className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}><Package size={17} /></span>
@@ -253,13 +253,13 @@ export default function Entry() {
         {!flowId ? <p className="text-sm text-[var(--muted)]">Chọn flow để tiếp tục.</p>
           : events.isLoading ? <Spinner />
           : noPermission ? <div className="p-4 rounded-xl text-sm flex items-center gap-2 pill-bad"><ShieldAlert size={18} />Bạn chưa được cấp quyền kê khai theo flow này. Liên hệ quản lý.</div>
-          : (events.data ?? []).map((ev: any) => (
+          : <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>{(events.data ?? []).map((ev: any) => (
             <button key={ev.id} onClick={() => setEvent(ev)} className={`opt ${event?.id === ev.id ? 'sel' : ''}`}>
               <span className="w-8 h-8 rounded-full grid place-items-center flex-none text-[13px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{ev.order}</span>
               <div className="flex-1"><b className="text-sm">{ev.name}</b><div className="text-xs text-[var(--muted)]">5 yếu tố EPCIS{(ev.fields?.length ?? 0) > 0 ? ` · +${ev.fields.length} trường` : ''}</div></div>
               {event?.id === ev.id && <Check size={18} className="text-[var(--accent)]" />}
             </button>
-          ))}
+          ))}</div>}
       </div>
     );
 

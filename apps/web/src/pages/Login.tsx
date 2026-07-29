@@ -39,7 +39,7 @@ export default function Login() {
         <div className="flex flex-col items-center text-center mb-7">
           <img src="/logo.jpg" alt="Vlabel" className="w-14 h-14 rounded-2xl border shadow-sm mb-3.5" style={{ borderColor: 'var(--border)', boxShadow: 'var(--shadow-md)' }} />
           <b className="text-2xl tracking-tight leading-none">Vlabel</b>
-          <div className="mt-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--faint)]">Truy xuất nguồn gốc</div>
+          <div className="mt-1.5 text-[12px] font-semibold text-[var(--muted)]">Chuẩn hóa dữ liệu, số hóa niềm tin.</div>
         </div>
 
         {/* Form card */}

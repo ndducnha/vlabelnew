@@ -69,7 +69,7 @@ export default function Layout() {
           <img src="/logo.jpg" alt="Vlabel" className="w-8 h-8 rounded-[9px] border" style={{ borderColor: 'var(--border)' }} />
           <div>
             <b className="text-base tracking-tight">Vlabel</b>
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-[var(--faint)]">Truy xuất nguồn gốc</div>
+            <div className="text-[11px] font-semibold text-[var(--faint)]">Chuẩn hóa dữ liệu, số hóa niềm tin.</div>
           </div>
         </div>
         <nav className="flex flex-col gap-0.5">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Plus, Trash2, Tag, Layers, Send, Undo2, ExternalLink, Download, QrCode, Pencil, CheckCircle2, XCircle, Globe, ShieldCheck } from 'lucide-react';
+import { Loader2, Plus, Trash2, Tag, Layers, Send, Undo2, ExternalLink, Download, QrCode, Pencil, CheckCircle2, XCircle, Globe, ShieldCheck, Search } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -21,11 +21,13 @@ export default function Elabels() {
   const qc = useQueryClient();
   const canEdit = can(PERMISSIONS.PRODUCT_UPDATE);
   const [status, setStatus] = useState('');
+  const [q, setQ] = useState('');
   const [edit, setEdit] = useState<any>(null);
   const [batches, setBatches] = useState<any>(null);
 
   const list = useQuery({ queryKey: ['elabels', status], queryFn: () => api.get('/elabels', { params: { status: status || undefined } }).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['elabels'] });
+  const rows = (list.data ?? []).filter((p: any) => !q || p.name?.toLowerCase().includes(q.toLowerCase()) || (p.gtin ?? '').includes(q));
 
   const setSt = useMutation({
     mutationFn: ({ id, status, recallReason }: any) => api.post(`/elabels/${id}/status`, { status, recallReason }),
@@ -36,17 +38,21 @@ export default function Elabels() {
   return (
     <>
       <PageHead title="Nhãn điện tử" subtitle="Soạn nội dung nhãn, quản lý lô, công bố và sinh QR cho người tiêu dùng quét"
-        actions={
-          <select className="input" style={{ width: 180 }} value={status} onChange={(e) => setStatus(e.target.value)}>
+        actions={<>
+          <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <Search size={15} className="text-[var(--muted)]" />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm sản phẩm theo tên / GTIN…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          <select className="input" style={{ width: 170 }} value={status} onChange={(e) => setStatus(e.target.value)}>
             <option value="">Tất cả trạng thái</option>
             <option value="draft">Nháp</option>
             <option value="published">Đã công bố</option>
             <option value="recalled">Thu hồi</option>
           </select>
-        } />
+        </>} />
 
-      {list.isLoading ? <Spinner /> : (list.data?.length ?? 0) === 0 ? (
-        <div className="card anim-in"><EmptyState title="Chưa có nhãn" hint="Nhãn điện tử được tạo từ sản phẩm ở mục Quản lý sản phẩm. Vào đây để soạn nội dung nhãn và công bố." /></div>
+      {list.isLoading ? <Spinner /> : rows.length === 0 ? (
+        <div className="card anim-in"><EmptyState title={q ? 'Không tìm thấy sản phẩm' : 'Chưa có nhãn'} hint={q ? 'Thử từ khóa khác theo tên hoặc GTIN.' : 'Nhãn điện tử được tạo từ sản phẩm ở mục Quản lý sản phẩm. Vào đây để soạn nội dung nhãn và công bố.'} /></div>
       ) : (
         <>
           {/* Bảng cho màn hình lớn */}
@@ -57,7 +63,7 @@ export default function Elabels() {
                 <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide">Lô</th><th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide text-right">Thao tác</th>
               </tr></thead>
               <tbody className="rows">
-                {list.data.map((p: any) => {
+                {rows.map((p: any) => {
                   const s = STATUS[p.elabelStatus] ?? STATUS.draft;
                   return (
                     <tr key={p.id} className="card-hover">
@@ -86,7 +92,7 @@ export default function Elabels() {
 
           {/* Thẻ cho di động */}
           <div className="flex flex-col gap-3 md:hidden">
-            {list.data.map((p: any) => {
+            {rows.map((p: any) => {
               const s = STATUS[p.elabelStatus] ?? STATUS.draft;
               return (
                 <div key={p.id} className="card card-hover p-4 anim-in">

@@ -1,168 +1,171 @@
 /**
- * Phụ lục I - Nghị định 37/2026/NĐ-CP: nội dung bắt buộc bổ sung trên nhãn theo từng nhóm hàng hóa.
- * Chọn nhóm hàng hóa sẽ hiện đúng bộ trường tương ứng để nhập. Đây là bộ mẫu thực dụng,
- * có thể mở rộng/khớp nguyên văn Phụ lục I khi cần.
+ * Phụ lục I - Nghị định 37/2026/NĐ-CP: "Các nội dung bắt buộc khác phải thể hiện trên nhãn hàng hóa
+ * theo tính chất của mỗi loại hàng hóa" (69 nhóm hàng hóa). Chọn nhóm hàng sẽ hiện đúng bộ trường tương ứng.
  */
 export type AppendixFieldType = 'text' | 'textarea' | 'date' | 'number';
-export interface AppendixField {
-  key: string;
-  label: string;
-  type: AppendixFieldType;
-  required?: boolean;
-}
-export interface AppendixGroup {
-  code: string;
-  name: string;
-  fields: AppendixField[];
-}
+export interface AppendixField { key: string; label: string; type: AppendixFieldType; required?: boolean }
+export interface AppendixGroup { code: string; name: string; fields: AppendixField[] }
 
-export const APPENDIX_GROUPS: AppendixGroup[] = [
-  {
-    code: 'THUC_PHAM', name: 'Thực phẩm',
-    fields: [
-      { key: 'net', label: 'Định lượng', type: 'text', required: true },
-      { key: 'ingredients', label: 'Thành phần / thành phần định lượng', type: 'textarea', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date', required: true },
-      { key: 'exp', label: 'Hạn sử dụng', type: 'date', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea' },
-      { key: 'storage', label: 'Hướng dẫn bảo quản', type: 'textarea' },
-      { key: 'warning', label: 'Thông tin cảnh báo', type: 'textarea' },
-    ],
-  },
-  {
-    code: 'TPBVSK', name: 'Thực phẩm bảo vệ sức khỏe',
-    fields: [
-      { key: 'net', label: 'Định lượng', type: 'text', required: true },
-      { key: 'ingredients', label: 'Thành phần định lượng', type: 'textarea', required: true },
-      { key: 'uses', label: 'Công dụng', type: 'textarea', required: true },
-      { key: 'target', label: 'Đối tượng sử dụng', type: 'text', required: true },
-      { key: 'dose', label: 'Liều dùng, cách dùng', type: 'textarea', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date', required: true },
-      { key: 'exp', label: 'Hạn sử dụng', type: 'date', required: true },
-      { key: 'warning', label: 'Khuyến cáo (VD: "Thực phẩm này không phải là thuốc...")', type: 'textarea', required: true },
-    ],
-  },
-  {
-    code: 'MY_PHAM', name: 'Mỹ phẩm',
-    fields: [
-      { key: 'net', label: 'Định lượng', type: 'text', required: true },
-      { key: 'ingredients', label: 'Thành phần đầy đủ', type: 'textarea', required: true },
-      { key: 'uses', label: 'Công dụng', type: 'textarea', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea' },
-      { key: 'lot', label: 'Số lô sản xuất', type: 'text', required: true },
-      { key: 'mfg_exp', label: 'Ngày sản xuất hoặc hạn sử dụng', type: 'text', required: true },
-      { key: 'warning', label: 'Thông tin cảnh báo', type: 'textarea' },
-    ],
-  },
-  {
-    code: 'THUOC', name: 'Thuốc / nguyên liệu làm thuốc',
-    fields: [
-      { key: 'active', label: 'Hoạt chất, hàm lượng / nồng độ', type: 'text', required: true },
-      { key: 'form', label: 'Dạng bào chế', type: 'text', required: true },
-      { key: 'indication', label: 'Chỉ định', type: 'textarea', required: true },
-      { key: 'dose', label: 'Cách dùng, liều dùng', type: 'textarea', required: true },
-      { key: 'contraindication', label: 'Chống chỉ định', type: 'textarea' },
-      { key: 'reg_no', label: 'Số đăng ký (SĐK)', type: 'text', required: true },
-      { key: 'lot', label: 'Số lô sản xuất', type: 'text', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date', required: true },
-      { key: 'exp', label: 'Hạn dùng', type: 'date', required: true },
-      { key: 'storage', label: 'Điều kiện bảo quản', type: 'text' },
-      { key: 'standard', label: 'Tiêu chuẩn chất lượng', type: 'text' },
-    ],
-  },
-  {
-    code: 'TTBYT', name: 'Trang thiết bị y tế',
-    fields: [
-      { key: 'reg_no', label: 'Số lưu hành / giấy phép nhập khẩu', type: 'text', required: true },
-      { key: 'serial', label: 'Số lô / số seri', type: 'text', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date' },
-      { key: 'exp', label: 'Hạn sử dụng', type: 'date' },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'warning', label: 'Cảnh báo', type: 'textarea' },
-    ],
-  },
-  {
-    code: 'PHAN_BON', name: 'Phân bón',
-    fields: [
-      { key: 'type', label: 'Loại phân bón', type: 'text', required: true },
-      { key: 'net', label: 'Khối lượng tịnh', type: 'text', required: true },
-      { key: 'nutrient', label: 'Chỉ tiêu chất lượng chính (hàm lượng dinh dưỡng)', type: 'textarea', required: true },
-      { key: 'reg_no', label: 'Số quyết định công nhận lưu hành', type: 'text', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'warning', label: 'Cảnh báo', type: 'textarea' },
-    ],
-  },
-  {
-    code: 'TACN', name: 'Thức ăn chăn nuôi',
-    fields: [
-      { key: 'net', label: 'Khối lượng tịnh', type: 'text', required: true },
-      { key: 'ingredients', label: 'Thành phần định lượng', type: 'textarea', required: true },
-      { key: 'quality', label: 'Chỉ tiêu chất lượng', type: 'textarea', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng, bảo quản', type: 'textarea', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date', required: true },
-      { key: 'exp', label: 'Hạn sử dụng', type: 'date', required: true },
-    ],
-  },
-  {
-    code: 'BVTV', name: 'Thuốc bảo vệ thực vật',
-    fields: [
-      { key: 'active', label: 'Hoạt chất, hàm lượng', type: 'text', required: true },
-      { key: 'reg_no', label: 'Số đăng ký', type: 'text', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'toxicity', label: 'Độc tính, cảnh báo nguy hiểm', type: 'textarea', required: true },
-      { key: 'firstaid', label: 'Hướng dẫn sơ cứu', type: 'textarea', required: true },
-      { key: 'storage', label: 'Bảo quản', type: 'text' },
-    ],
-  },
-  {
-    code: 'DIEN_TU', name: 'Thiết bị điện, điện tử',
-    fields: [
-      { key: 'specs', label: 'Thông số kỹ thuật (điện áp, công suất...)', type: 'textarea', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'warning', label: 'Cảnh báo an toàn', type: 'textarea', required: true },
-      { key: 'standard', label: 'Tiêu chuẩn / quy chuẩn áp dụng', type: 'text' },
-    ],
-  },
-  {
-    code: 'PCCC', name: 'Thiết bị phòng cháy chữa cháy',
-    fields: [
-      { key: 'specs', label: 'Thông số kỹ thuật (loại, dung tích, khối lượng chất chữa cháy)', type: 'textarea', required: true },
-      { key: 'standard', label: 'Tiêu chuẩn áp dụng', type: 'text', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'inspection', label: 'Chu kỳ / hạn kiểm định', type: 'text', required: true },
-      { key: 'warning', label: 'Cảnh báo an toàn', type: 'textarea' },
-    ],
-  },
-  {
-    code: 'DO_CHOI', name: 'Đồ chơi trẻ em',
-    fields: [
-      { key: 'age', label: 'Độ tuổi phù hợp', type: 'text', required: true },
-      { key: 'warning', label: 'Cảnh báo an toàn', type: 'textarea', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea' },
-      { key: 'material', label: 'Chất liệu', type: 'text' },
-    ],
-  },
-  {
-    code: 'HOA_CHAT', name: 'Hóa chất gia dụng',
-    fields: [
-      { key: 'ingredients', label: 'Thành phần', type: 'textarea', required: true },
-      { key: 'hazard', label: 'Cảnh báo nguy hiểm', type: 'textarea', required: true },
-      { key: 'usage', label: 'Hướng dẫn sử dụng', type: 'textarea', required: true },
-      { key: 'firstaid', label: 'Hướng dẫn sơ cứu', type: 'textarea', required: true },
-      { key: 'storage', label: 'Bảo quản', type: 'text' },
-    ],
-  },
-  {
-    code: 'RUOU', name: 'Rượu',
-    fields: [
-      { key: 'net', label: 'Định lượng', type: 'text', required: true },
-      { key: 'ethanol', label: 'Hàm lượng ethanol (% vol)', type: 'number', required: true },
-      { key: 'warning', label: 'Cảnh báo (không dùng cho người dưới 18 tuổi...)', type: 'textarea', required: true },
-      { key: 'mfg', label: 'Ngày sản xuất', type: 'date' },
-      { key: 'exp', label: 'Hạn sử dụng', type: 'date' },
-    ],
-  },
+// Thư viện trường: key -> [nhãn, kiểu, bắt buộc mặc định]
+const F: Record<string, [string, AppendixFieldType, boolean]> = {
+  net: ['Định lượng', 'text', true],
+  mfg: ['Ngày, tháng, năm sản xuất', 'date', true],
+  mfg_my: ['Tháng, năm sản xuất', 'text', true],
+  mfg_y: ['Năm sản xuất', 'text', true],
+  exp: ['Hạn sử dụng', 'date', true],
+  ingredients: ['Thành phần / thành phần định lượng', 'textarea', true],
+  nutrition: ['Thành phần, giá trị dinh dưỡng', 'textarea', false],
+  warning: ['Thông tin cảnh báo', 'textarea', true],
+  usage: ['Hướng dẫn sử dụng', 'textarea', false],
+  usage_storage: ['Hướng dẫn sử dụng, bảo quản', 'textarea', false],
+  storage: ['Hướng dẫn bảo quản', 'textarea', false],
+  storage_cond: ['Điều kiện bảo quản', 'text', false],
+  specs: ['Thông số kỹ thuật', 'textarea', true],
+  uses: ['Công dụng, đối tượng, cách dùng', 'textarea', true],
+  recommend: ['Công bố khuyến cáo về sức khỏe', 'textarea', false],
+  phrase_bvsk: ['Ghi "Thực phẩm bảo vệ sức khỏe" và "Thực phẩm này không phải là thuốc..."', 'textarea', true],
+  phrase_irr: ['Ghi cụm từ "Thực phẩm đã qua chiếu xạ"', 'text', true],
+  phrase_gmo: ['Ghi cụm từ "biến đổi gen"', 'text', true],
+  phrase_add: ['Ghi cụm từ bắt buộc (Thực phẩm bổ sung / dinh dưỡng y học...)', 'text', true],
+  phrase_fa: ['Ghi "Phụ gia thực phẩm" / "Chất hỗ trợ chế biến thực phẩm"', 'text', true],
+  phrase_micro: ['Ghi cụm từ "Dùng cho thực phẩm"', 'text', true],
+  phrase_foliar: ['Ghi cụm từ "Phân bón lá" (nếu là phân bón lá)', 'text', false],
+  barcode: ['Mã số, mã vạch', 'text', false],
+  ethanol: ['Hàm lượng etanol', 'number', true],
+  lot_code: ['Mã nhận diện lô', 'text', false],
+  form: ['Dạng bào chế', 'text', true],
+  active: ['Thành phần, hàm lượng / nồng độ dược chất', 'textarea', true],
+  packaging: ['Quy cách đóng gói', 'text', false],
+  maker_addr: ['Tên, địa chỉ cơ sở sản xuất', 'text', true],
+  reg_no: ['Số đăng ký lưu hành / giấy phép nhập khẩu', 'text', true],
+  lot: ['Số lô sản xuất', 'text', true],
+  serial: ['Số lô hoặc số sê ri', 'text', true],
+  mat_name: ['Tên nguyên liệu', 'text', true],
+  variety: ['Tên giống', 'text', true],
+  grade: ['Cấp giống', 'text', false],
+  traits: ['Đặc tính của giống', 'textarea', false],
+  quality: ['Chỉ tiêu chất lượng', 'textarea', true],
+  origin: ['Xuất xứ', 'text', false],
+  reg_code: ['Mã số lưu hành', 'text', false],
+  lot_no: ['Mã hiệu lô', 'text', false],
+  producer_addr: ['Tên, địa chỉ tổ chức sản xuất / nhập khẩu', 'text', true],
+  sell_date: ['Ngày xuất bán', 'date', false],
+  qty: ['Số lượng', 'text', false],
+  transport: ['Hướng dẫn vận chuyển', 'textarea', false],
+  phone: ['Số điện thoại', 'text', false],
+  purity: ['Hàm lượng', 'text', true],
+  weight: ['Khối lượng', 'text', true],
+  attach_weight: ['Khối lượng vật gắn', 'text', false],
+  mark: ['Mã ký hiệu sản phẩm', 'text', false],
+  publisher: ['Nhà xuất bản / nhà in', 'text', true],
+  author: ['Tên tác giả, dịch giả', 'text', false],
+  pub_license: ['Giấy phép xuất bản', 'text', false],
+  maker: ['Tên nhà sản xuất', 'text', true],
+  brand: ['Nhãn hiệu, tên thương mại, mã kiểu loại (Model)', 'text', true],
+  frame: ['Số khung / số VIN', 'text', true],
+  mass_self: ['Khối lượng bản thân / tự trọng', 'text', true],
+  mass_total: ['Khối lượng toàn bộ thiết kế', 'text', false],
+  seats: ['Số người cho phép chở', 'number', false],
+  engine: ['Dung tích xi lanh', 'text', false],
+  type_appr: ['Số chứng nhận phê duyệt kiểu', 'text', false],
+  model: ['Loại / Model', 'text', true],
+  part_code: ['Mã phụ tùng (part number)', 'text', true],
+  chem_id: ['Mã nhận dạng hóa chất', 'text', false],
+  ghs: ['Hình đồ / từ cảnh báo nguy cơ (GHS)', 'textarea', false],
+  prevention: ['Biện pháp phòng ngừa', 'textarea', false],
+  disposal: ['Hướng dẫn thải bỏ', 'textarea', false],
+  fertilizer_type: ['Loại phân bón', 'text', true],
+  fertilizer_code: ['Mã số phân bón', 'text', true],
+  fertilizer_method: ['Phương thức sử dụng', 'text', true],
+  helmet_size: ['Cỡ mũ', 'text', true],
+  helmet_model: ['Kiểu mũ (Model)', 'text', true],
+  refurbished: ['Ghi "sản phẩm tân trang làm mới" (nếu có)', 'text', false],
+};
+
+// [mã, tên nhóm, keys]. Hậu tố ? = không bắt buộc, ! = bắt buộc (ghi đè mặc định).
+const G: [string, string, string[]][] = [
+  ['LUONG_THUC', 'Lương thực', ['net', 'mfg', 'exp', 'warning?']],
+  ['THUC_PHAM', 'Thực phẩm', ['net', 'mfg', 'exp', 'ingredients', 'nutrition', 'warning', 'usage_storage']],
+  ['TPBVSK', 'Thực phẩm bảo vệ sức khỏe', ['net', 'mfg', 'exp', 'ingredients', 'uses', 'recommend?', 'phrase_bvsk']],
+  ['TP_CHIEU_XA', 'Thực phẩm đã qua chiếu xạ', ['net', 'mfg', 'exp', 'ingredients', 'warning', 'phrase_irr']],
+  ['TP_BDG', 'Thực phẩm biến đổi gen', ['net', 'mfg', 'exp', 'ingredients', 'warning', 'phrase_gmo']],
+  ['DO_UONG', 'Đồ uống (trừ rượu)', ['net', 'mfg', 'exp', 'ingredients', 'warning', 'usage_storage']],
+  ['RUOU', 'Rượu', ['net', 'ethanol', 'exp?', 'storage?', 'warning?', 'lot_code?']],
+  ['THUOC_LA', 'Thuốc lá', ['net', 'mfg', 'warning', 'exp', 'barcode']],
+  ['PHU_GIA', 'Phụ gia thực phẩm, chất hỗ trợ chế biến thực phẩm', ['net', 'mfg', 'exp', 'ingredients', 'usage_storage', 'phrase_fa', 'warning?']],
+  ['VI_CHAT', 'Vi chất dinh dưỡng', ['net', 'mfg', 'ingredients', 'usage_storage', 'phrase_micro']],
+  ['NL_THUC_PHAM', 'Nguyên liệu thực phẩm', ['mat_name', 'net', 'mfg', 'exp', 'usage_storage']],
+  ['THUOC', 'Thuốc, nguyên liệu làm thuốc dùng cho người', ['form', 'active', 'packaging?', 'maker_addr', 'reg_no', 'lot', 'mfg', 'exp', 'storage_cond?']],
+  ['TTBYT', 'Trang thiết bị y tế', ['reg_no', 'serial', 'mfg?', 'exp?', 'warning', 'usage_storage']],
+  ['MY_PHAM', 'Mỹ phẩm', ['net', 'ingredients', 'lot', 'mfg', 'exp?', 'usage', 'warning']],
+  ['HOA_CHAT_GD', 'Hóa chất gia dụng', ['net', 'mfg', 'exp', 'ingredients', 'lot', 'reg_no?', 'warning', 'usage_storage']],
+  ['TACN', 'Thức ăn chăn nuôi', ['net', 'mfg', 'exp', 'ingredients', 'usage_storage', 'warning?']],
+  ['THUOC_THU_Y', 'Thuốc thú y, vắcxin, chế phẩm sinh học dùng trong thú y', ['net', 'mfg', 'exp', 'ingredients', 'usage_storage', 'warning']],
+  ['TA_THUY_SAN', 'Thức ăn thủy sản', ['net', 'mfg', 'exp', 'ingredients', 'usage_storage', 'warning?', 'phone?']],
+  ['CPSH_TS', 'Chế phẩm sinh học, vi sinh vật, hóa chất, chất xử lý cải tạo môi trường trong nuôi trồng thủy sản', ['net', 'mfg', 'exp', 'ingredients', 'usage_storage', 'warning?', 'phone?']],
+  ['BVTV', 'Thuốc bảo vệ thực vật', ['net', 'mfg', 'exp', 'ingredients', 'warning', 'usage_storage']],
+  ['GIONG_CT', 'Giống cây trồng', ['variety', 'grade', 'traits', 'usage_storage', 'warning', 'net', 'exp', 'producer_addr', 'reg_code?', 'origin?', 'lot_no?']],
+  ['GIONG_VN', 'Giống vật nuôi', ['net', 'mfg', 'exp', 'usage_storage', 'warning?']],
+  ['GIONG_TS', 'Giống thủy sản', ['variety', 'producer_addr', 'qty?', 'quality', 'sell_date?', 'exp?', 'transport?', 'phone?']],
+  ['DO_CHOI', 'Đồ chơi trẻ em', ['ingredients', 'specs', 'warning', 'usage', 'mfg_y']],
+  ['DET_MAY', 'Sản phẩm dệt, may, da, giày', ['ingredients', 'specs', 'warning', 'usage_storage', 'mfg_y']],
+  ['NHUA_CAO_SU', 'Sản phẩm nhựa, cao su', ['net', 'mfg_my', 'ingredients', 'specs', 'warning']],
+  ['GIAY', 'Giấy, bìa, cacton', ['net', 'mfg_my', 'specs', 'warning']],
+  ['VPP', 'Đồ dùng giảng dạy, đồ dùng học tập, văn phòng phẩm', ['net', 'specs', 'warning']],
+  ['AN_PHAM', 'Ấn phẩm chính trị, kinh tế, văn hóa, khoa học, giáo dục, văn học, nghệ thuật, tôn giáo', ['publisher', 'author?', 'pub_license?', 'specs', 'warning?']],
+  ['NHAC_CU', 'Nhạc cụ', ['specs', 'warning?']],
+  ['THE_THAO', 'Dụng cụ thể dục thể thao, máy tập thể dục thể thao', ['net', 'mfg', 'ingredients', 'specs', 'usage', 'warning?']],
+  ['DO_GO', 'Đồ gỗ', ['ingredients', 'specs', 'usage_storage', 'warning?']],
+  ['SANH_SU', 'Sản phẩm sành, sứ, thủy tinh', ['ingredients', 'specs', 'usage_storage', 'warning?']],
+  ['TCMN', 'Hàng thủ công mỹ nghệ', ['ingredients', 'specs', 'usage_storage', 'warning?']],
+  ['GIA_DUNG', 'Đồ gia dụng, thiết bị gia dụng (không dùng điện)', ['ingredients', 'specs', 'usage_storage', 'warning?']],
+  ['BAC', 'Bạc', ['net', 'ingredients', 'warning?']],
+  ['DA_QUY', 'Đá quý', ['net', 'specs', 'warning?']],
+  ['VANG', 'Vàng trang sức, mỹ nghệ', ['purity', 'weight', 'attach_weight?', 'mark?', 'warning?']],
+  ['BHLD', 'Trang thiết bị bảo hộ lao động, phòng cháy chữa cháy', ['net', 'mfg', 'exp', 'ingredients', 'specs', 'warning', 'usage_storage']],
+  ['VIEN_THONG', 'Thiết bị bưu chính, viễn thông, CNTT, an toàn thông tin mạng, điện, điện tử', ['mfg_y', 'specs', 'warning', 'usage_storage', 'refurbished']],
+  ['CO_KHI', 'Máy móc, trang thiết bị cơ khí', ['net', 'mfg_my', 'specs', 'warning', 'usage_storage']],
+  ['DO_LUONG', 'Máy móc, trang thiết bị đo lường, thử nghiệm', ['net', 'mfg_my', 'specs', 'warning', 'usage_storage']],
+  ['LUYEN_KIM', 'Sản phẩm luyện kim', ['net', 'ingredients', 'specs']],
+  ['DANH_BAT', 'Dụng cụ đánh bắt thủy sản', ['ingredients', 'specs', 'warning?', 'phone?']],
+  ['O_TO', 'Ô tô', ['maker', 'brand', 'frame', 'mass_self', 'seats?', 'mass_total', 'type_appr?', 'mfg_y', 'warning?']],
+  ['RO_MOOC', 'Rơmooc, sơmi rơmooc', ['maker', 'brand', 'frame', 'mass_self', 'mass_total', 'type_appr?', 'mfg_y', 'warning?']],
+  ['XE_MAY', 'Mô tô, xe máy', ['maker', 'brand', 'frame', 'mass_self', 'engine', 'type_appr?', 'mfg_y', 'warning?']],
+  ['XE_CHUYEN_DUNG', 'Xe máy chuyên dùng', ['maker', 'brand', 'frame', 'specs', 'mfg_y', 'warning?']],
+  ['XE_4_BANH', 'Xe chở người bốn bánh có gắn động cơ', ['maker', 'brand', 'mass_self', 'seats', 'mass_total', 'frame', 'type_appr?', 'mfg_y', 'warning?']],
+  ['XE_DAP', 'Xe đạp', ['maker', 'mfg_y', 'specs', 'warning?']],
+  ['PHU_TUNG', 'Phụ tùng của phương tiện giao thông', ['brand', 'part_code', 'mfg_y?', 'specs?', 'warning?']],
+  ['VLXD', 'Vật liệu xây dựng và trang trí nội thất', ['net', 'specs', 'mfg_my', 'usage_storage', 'warning?']],
+  ['DAU_MO', 'Các sản phẩm từ dầu mỏ', ['net', 'ingredients', 'warning', 'usage_storage', 'lot?']],
+  ['TAY_RUA', 'Sản phẩm tẩy rửa, xả vải, khử mùi, làm thơm gia dụng', ['net', 'mfg_my', 'ingredients', 'warning', 'usage']],
+  ['HOA_CHAT', 'Hóa chất', ['net', 'mfg', 'exp?', 'ingredients', 'chem_id?', 'ghs?', 'prevention?', 'usage_storage']],
+  ['PHAN_BON', 'Phân bón', ['fertilizer_type', 'fertilizer_code', 'fertilizer_method', 'net', 'mfg', 'exp', 'ingredients', 'warning', 'usage_storage', 'phrase_foliar']],
+  ['VLN', 'Vật liệu nổ công nghiệp', ['net', 'mfg', 'exp', 'ingredients', 'warning', 'usage_storage']],
+  ['KINH_MAT', 'Kính mắt', ['ingredients', 'specs', 'warning?', 'usage']],
+  ['DONG_HO', 'Đồng hồ', ['ingredients', 'specs', 'warning?', 'usage']],
+  ['BIM', 'Bỉm, băng vệ sinh, khẩu trang, bông tẩy trang, bông vệ sinh tai, giấy vệ sinh', ['ingredients', 'specs', 'usage', 'warning?', 'mfg_my', 'exp']],
+  ['BAN_CHAI', 'Bàn chải đánh răng', ['ingredients', 'specs', 'usage', 'warning?', 'mfg_my']],
+  ['KHAN_UOT', 'Khăn ướt', ['ingredients', 'specs', 'usage', 'warning?', 'mfg', 'exp']],
+  ['LAM_DEP', 'Máy móc, dụng cụ làm đẹp', ['specs', 'usage', 'warning?', 'mfg_y']],
+  ['BAO_GOI_TP', 'Dụng cụ, vật liệu bao gói chứa đựng thực phẩm', ['ingredients', 'specs', 'usage', 'warning?']],
+  ['MU_BAO_HIEM', 'Mũ bảo hiểm dùng cho người đi mô tô, xe gắn máy, xe đạp điện, xe máy điện, xe đạp máy', ['helmet_size', 'mfg_my', 'helmet_model', 'net', 'usage', 'warning?']],
+  ['XE_DIEN', 'Xe đạp điện, xe máy điện, xe đạp máy', ['brand', 'model', 'mass_self', 'specs', 'mfg_y', 'usage', 'warning?']],
+  ['TP_BO_SUNG', 'Thực phẩm bổ sung, thực phẩm dinh dưỡng y học, thực phẩm dùng cho chế độ ăn đặc biệt', ['net', 'mfg', 'exp', 'ingredients', 'warning?', 'usage_storage', 'recommend?', 'phrase_add']],
+  ['DIET_KHUAN', 'Chế phẩm diệt côn trùng, diệt khuẩn dùng trong lĩnh vực gia dụng và y tế', ['net', 'mfg', 'exp', 'ingredients', 'lot', 'reg_no', 'warning', 'usage', 'storage', 'disposal', 'ghs', 'maker_addr', 'producer_addr']],
+  ['VANG_MIENG', 'Vàng miếng', ['purity', 'weight', 'mark?', 'warning?']],
 ];
+
+const parse = (raw: string): [string, boolean | undefined] =>
+  raw.endsWith('?') ? [raw.slice(0, -1), false] : raw.endsWith('!') ? [raw.slice(0, -1), true] : [raw, undefined];
+
+export const APPENDIX_GROUPS: AppendixGroup[] = G.map(([code, name, keys]) => ({
+  code, name,
+  fields: keys.map((raw) => {
+    const [key, ov] = parse(raw);
+    const [label, type, req] = F[key];
+    return { key, label, type, required: ov === undefined ? req : ov };
+  }),
+}));
 
 export function appendixGroupByCode(code?: string | null): AppendixGroup | undefined {
   return code ? APPENDIX_GROUPS.find((g) => g.code === code) : undefined;
