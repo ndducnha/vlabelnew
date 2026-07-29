@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vlabel}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vlabel}
+      POSTGRES_DB: ${POSTGRES_DB:-vlabel}
+    ports:
+      # DB_PORT mặc định 5432; đặt 5433 nếu máy đã có Postgres native chiếm 5432
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vlabel}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-vlabel}:${POSTGRES_PASSWORD:-vlabel}@db:5432/${POSTGRES_DB:-vlabel}?schema=public
+      API_PORT: 4000
+      NODE_ENV: production
+      CORS_ORIGIN: http://localhost:5173
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change-me-access-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh-secret}
+      JWT_ACCESS_TTL: 900
+      JWT_REFRESH_TTL: 1209600
+      VNPC_API_URL: ${VNPC_API_URL:-}
+      VNPC_API_KEY: ${VNPC_API_KEY:-}
+      VNPC_API_TIMEOUT: 10000
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /app/storage
+    ports:
+      - "4000:4000"
+    volumes:
+      - storage_data:/app/storage
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000/api
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
+volumes:
+  db_data:
+  storage_data:

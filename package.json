@@ -1,0 +1,26 @@
+{
+  "name": "vlabel",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Vlabel — nền tảng truy xuất nguồn gốc đa tenant (GTIN + VNPC)",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:api dev:web",
+    "dev:api": "npm run dev -w @vlabel/api",
+    "dev:web": "npm run dev -w @vlabel/web",
+    "build": "npm run build -w @vlabel/shared && npm run build -w @vlabel/api && npm run build -w @vlabel/web",
+    "db:migrate": "npm run db:migrate -w @vlabel/api",
+    "db:seed": "npm run db:seed -w @vlabel/api",
+    "db:reset": "npm run db:reset -w @vlabel/api",
+    "test": "npm run test -w @vlabel/api"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
