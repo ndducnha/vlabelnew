@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Loader2, Trash2, ClipboardEdit, CalendarClock, Check, Package, AlertTriangle, ArrowRight, ListChecks, CircleCheck } from 'lucide-react';
+import { Plus, Loader2, Trash2, ClipboardEdit, CalendarClock, Check, Package, AlertTriangle, ArrowRight, ListChecks, CircleCheck, Search } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, StatCard, Avatar } from '../components/ui';
+import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, StatCard, Avatar, Paginator, usePaged } from '../components/ui';
 import { PERMISSIONS } from '@vlabel/shared';
 
 const STATUS: Record<string, { cls: string; label: string }> = {
@@ -22,6 +22,8 @@ export default function TraceTasks() {
   const isManager = can(PERMISSIONS.FLOW_MANAGE);
   const [mine, setMine] = useState(!isManager);
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
 
   const tasks = useQuery({ queryKey: ['trace-tasks', mine], queryFn: () => api.get('/trace-tasks', { params: { mine: mine ? 1 : undefined } }).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['trace-tasks'] });
@@ -44,6 +46,8 @@ export default function TraceTasks() {
   const overdueCount = list.filter((t) => t.status !== 'DONE' && new Date(t.endDate) < now).length;
   const doneCount = list.filter((t) => t.status === 'DONE').length;
   const activeCount = list.length - doneCount;
+  const paged = usePaged<any>(list, (t, ql) =>
+    (t.name ?? '').toLowerCase().includes(ql) || (t.product?.name ?? '').toLowerCase().includes(ql) || (t.product?.gtin ?? '').toLowerCase().includes(ql) || (t.lot ?? '').toLowerCase().includes(ql) || (t.assignedUser?.fullName ?? '').toLowerCase().includes(ql), query, page);
 
   return (
     <>
@@ -56,6 +60,10 @@ export default function TraceTasks() {
               options={[{ value: 'all', label: 'Tất cả' }, { value: 'mine', label: 'Của tôi' }]}
             />
           )}
+          <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <Search size={15} className="text-[var(--muted)]" />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 190 }} placeholder="Tìm nhiệm vụ…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
+          </div>
           {isManager && <button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={16} />Tạo nhiệm vụ</button>}
         </>} />
 
@@ -71,7 +79,8 @@ export default function TraceTasks() {
           </div>
 
           <div className="flex flex-col gap-3">
-            {list.map((t: any) => {
+            {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy nhiệm vụ phù hợp.</p>}
+            {paged.rows.map((t: any) => {
               const s = STATUS[t.status] ?? STATUS.PENDING;
               const overdue = t.status !== 'DONE' && new Date(t.endDate) < new Date();
               return (
@@ -126,6 +135,7 @@ export default function TraceTasks() {
                 </div>
               );
             })}
+            <Paginator page={paged.page} pageSize={10} total={paged.total} onPage={setPage} />
           </div>
         </>
       )}

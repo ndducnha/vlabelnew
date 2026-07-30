@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
+import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2, Search } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -24,6 +24,7 @@ export default function Organizations() {
 
   const [create, setCreate] = useState<{ parentId: string | null } | null>(null);
   const [form, setForm] = useState({ name: '', code: '' });
+  const [q, setQ] = useState('');
 
   const createLevel = create
     ? (create.parentId ? ((flat.data ?? []).find((o: any) => o.id === create.parentId)?.level ?? 0) + 1 : 0)
@@ -90,12 +91,40 @@ export default function Organizations() {
   };
 
   const roots = tree.data ?? [];
+  const flatten = (nodes: Node[]): Node[] => nodes.flatMap((n) => [n, ...flatten(n.children)]);
+  const ql = q.trim().toLowerCase();
+  const matches = ql ? flatten(roots).filter((n) => n.name.toLowerCase().includes(ql) || n.code.toLowerCase().includes(ql)) : [];
 
   return (
     <>
       <PageHead title="Tổ chức" subtitle="Cây đơn vị đa tầng · thêm và di chuyển đơn vị"
-        actions={canManage && <button className="btn btn-primary" onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: null }); }}><Plus size={16} />Đơn vị gốc</button>} />
-      {tree.isLoading ? <Spinner /> : roots.length === 0 ? (
+        actions={<>
+          <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <Search size={15} className="text-[var(--muted)]" />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 180 }} placeholder="Tìm đơn vị / mã…" value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
+          {canManage && <button className="btn btn-primary" onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: null }); }}><Plus size={16} />Đơn vị gốc</button>}
+        </>} />
+      {tree.isLoading ? <Spinner /> : ql ? (
+        <div className="card p-2.5 max-w-[640px]">
+          {matches.length === 0
+            ? <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy đơn vị phù hợp.</p>
+            : matches.map((n) => {
+                const Icon = n.level === 0 ? Building2 : n.type === 'FACTORY' ? Factory : FolderTree;
+                return (
+                  <div key={n.id} className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface)] anim-in">
+                    <span className="iconbox flex-none" style={{ width: 34, height: 34, background: 'var(--surface)', color: 'var(--muted)' }}><Icon size={18} /></span>
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-sm font-semibold text-[var(--ink)]">{n.name}</div>
+                      <div className="truncate text-xs mono text-[var(--faint)]">{n.code}</div>
+                    </div>
+                    <span className={`pill ${n.level === 0 ? 'pill-accent' : 'pill-neutral'} flex-none`}>Cấp {n.level + 1}</span>
+                    {canManage && <button className="btn btn-sm flex-none" title="Thêm đơn vị con" onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: n.id }); }}><Plus size={15} /></button>}
+                  </div>
+                );
+              })}
+        </div>
+      ) : roots.length === 0 ? (
         <div className="card max-w-[640px]">
           <EmptyState
             title="Chưa có đơn vị nào"

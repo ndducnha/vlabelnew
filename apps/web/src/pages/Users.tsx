@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { UserPlus, Loader2, GitBranch, Search, Check, Mail, Building2 } from 'lucide-react';
 import { api, apiError } from '../lib/api';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, Drawer, Avatar, EmptyState } from '../components/ui';
+import { PageHead, Spinner, Drawer, Avatar, EmptyState, Paginator, usePaged } from '../components/ui';
 
 export default function Users() {
   const toast = useToast();
@@ -14,6 +14,9 @@ export default function Users() {
 
   const [open, setOpen] = useState(false);
   const [flowUser, setFlowUser] = useState<any | null>(null);
+  const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
+  const paged = usePaged<any>(users.data ?? [], (u, ql) => u.fullName.toLowerCase().includes(ql) || (u.email ?? '').toLowerCase().includes(ql), q, page);
   const [form, setForm] = useState({ email: '', fullName: '', password: 'Vlabel@123', organizationId: '', roleKeys: [] as string[] });
 
   const create = useMutation({
@@ -27,7 +30,13 @@ export default function Users() {
   return (
     <>
       <PageHead title="Người dùng & phân quyền" subtitle={`${users.data?.length ?? 0} người dùng`}
-        actions={<button className="btn btn-primary" onClick={() => setOpen(true)}><UserPlus size={16} />Mời người dùng</button>} />
+        actions={<>
+          <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <Search size={15} className="text-[var(--muted)]" />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 190 }} placeholder="Tìm theo tên / email…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+          </div>
+          <button className="btn btn-primary" onClick={() => setOpen(true)}><UserPlus size={16} />Mời người dùng</button>
+        </>} />
 
       {users.isLoading ? <Spinner /> : (users.data?.length ?? 0) === 0 ? (
         <div className="card anim-in">
@@ -36,7 +45,8 @@ export default function Users() {
         </div>
       ) : (
         <div className="flex flex-col gap-2.5 anim-in">
-          {users.data.map((u: any) => (
+          {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy người dùng phù hợp.</p>}
+          {paged.rows.map((u: any) => (
             <div key={u.id} className="card card-hover p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-3 min-w-0 sm:w-[240px] sm:flex-none">
                 <Avatar name={u.fullName} size={40} />
@@ -65,6 +75,7 @@ export default function Users() {
               </button>
             </div>
           ))}
+          <Paginator page={paged.page} pageSize={10} total={paged.total} onPage={setPage} />
         </div>
       )}
 

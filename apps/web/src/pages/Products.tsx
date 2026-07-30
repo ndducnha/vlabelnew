@@ -5,7 +5,7 @@ import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, Uplo
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, Drawer } from '../components/ui';
+import { PageHead, Spinner, EmptyState, Drawer, Paginator, usePaged } from '../components/ui';
 import { PERMISSIONS } from '@vlabel/shared';
 
 export default function Products() {
@@ -17,6 +17,10 @@ export default function Products() {
   const [editProduct, setEditProduct] = useState<any | null>(null);
   const [qrProduct, setQrProduct] = useState<any | null>(null);
   const [traceProduct, setTraceProduct] = useState<any | null>(null);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const paged = usePaged<any>(q.data ?? [], (p, ql) =>
+    (p.name ?? '').toLowerCase().includes(ql) || (p.gtin ?? '').toLowerCase().includes(ql) || (p.organization?.name ?? '').toLowerCase().includes(ql), query, page);
 
   const del = useMutation({
     mutationFn: (id: string) => api.delete(`/products/${id}`),
@@ -32,13 +36,20 @@ export default function Products() {
   return (
     <>
       <PageHead title="Quản lý sản phẩm" subtitle="Gắn GTIN với tên & thông tin, gán Flow truy xuất, tải QR"
-        actions={can(PERMISSIONS.PRODUCT_CREATE) && <Link to="/products/new" className="btn btn-primary"><Plus size={16} />Tạo sản phẩm</Link>} />
+        actions={<>
+          <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <Search size={15} className="text-[var(--muted)]" />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm tên / GTIN / đơn vị…" value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
+          </div>
+          {can(PERMISSIONS.PRODUCT_CREATE) && <Link to="/products/new" className="btn btn-primary"><Plus size={16} />Tạo sản phẩm</Link>}
+        </>} />
       {q.isLoading ? <Spinner /> : (q.data?.length ?? 0) === 0 ? (
         <div className="card"><EmptyState title="Chưa có sản phẩm" hint="Tạo sản phẩm bằng cách chọn GTIN từ VNPC."
           action={can(PERMISSIONS.PRODUCT_CREATE) && <Link to="/products/new" className="btn btn-primary btn-sm"><Plus size={15} />Tạo sản phẩm</Link>} /></div>
       ) : (
         <div className="flex flex-col gap-3">
-          {q.data.map((p: any) => (
+          {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy sản phẩm phù hợp.</p>}
+          {paged.rows.map((p: any) => (
             <div key={p.id} className="card card-hover anim-in p-4 flex flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-5">
               <div className="min-w-0 flex-1 flex flex-col gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -66,6 +77,7 @@ export default function Products() {
               </div>
             </div>
           ))}
+          <Paginator page={paged.page} pageSize={10} total={paged.total} onPage={setPage} />
         </div>
       )}
 

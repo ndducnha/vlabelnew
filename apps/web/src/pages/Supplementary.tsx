@@ -7,7 +7,7 @@ import {
 import { api, apiError, fileUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, SegmentedControl } from '../components/ui';
+import { PageHead, Spinner, EmptyState, SegmentedControl, Paginator } from '../components/ui';
 import { PERMISSIONS } from '@vlabel/shared';
 
 const SCOPE: Record<string, string> = { ALL: 'Toàn bộ sản phẩm', BATCH: 'Theo lô', PRODUCTION: 'Theo ngày SX', ITEM: 'Theo đơn vị (serial)' };
@@ -41,13 +41,19 @@ function ListView({ canEdit, onNew, onEdit }: any) {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const list = useQuery({ queryKey: ['supp', status], queryFn: () => api.get('/supplementary-labels', { params: { status: status || undefined } }).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['supp'] });
   const del = useMutation({ mutationFn: (id: string) => api.delete(`/supplementary-labels/${id}`), onSuccess: () => { toast('Đã xóa'); inv(); }, onError: (e) => toast(apiError(e), false) });
   const clone = useMutation({ mutationFn: (id: string) => api.post(`/supplementary-labels/${id}/clone`), onSuccess: () => { toast('Đã sao chép'); inv(); }, onError: (e) => toast(apiError(e), false) });
   const setSt = useMutation({ mutationFn: ({ id, s }: any) => api.post(`/supplementary-labels/${id}/status`, { status: s }), onSuccess: () => { toast('Đã cập nhật'); inv(); }, onError: (e) => toast(apiError(e), false) });
 
-  const rows = (list.data ?? []).filter((r: any) => !q || r.name?.toLowerCase().includes(q.toLowerCase()) || r.product?.name?.toLowerCase().includes(q.toLowerCase()) || (r.product?.gtin ?? '').includes(q) || (r.batchCode ?? '').includes(q));
+  const filtered = (list.data ?? []).filter((r: any) => !q || r.name?.toLowerCase().includes(q.toLowerCase()) || r.product?.name?.toLowerCase().includes(q.toLowerCase()) || (r.product?.gtin ?? '').includes(q) || (r.batchCode ?? '').includes(q));
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, pages);
+  const rows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
   const PUBLIC_BASE = window.location.origin;
 
   return (
@@ -56,9 +62,9 @@ function ListView({ canEdit, onNew, onEdit }: any) {
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
-            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm theo tên, sản phẩm, GTIN, lô…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm theo tên, sản phẩm, GTIN, lô…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
           </div>
-          <select className="input" style={{ width: 150 }} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select className="input" style={{ width: 150 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
             <option value="">Tất cả trạng thái</option>
             <option value="draft">Nháp</option>
             <option value="published">Đã xuất bản</option>
@@ -67,7 +73,7 @@ function ListView({ canEdit, onNew, onEdit }: any) {
           {canEdit && <button className="btn btn-primary" onClick={onNew}><Plus size={16} />Tạo nhãn phụ</button>}
         </>} />
 
-      {list.isLoading ? <Spinner /> : rows.length === 0 ? (
+      {list.isLoading ? <Spinner /> : total === 0 ? (
         <div className="card"><EmptyState title={q ? 'Không tìm thấy' : 'Chưa có nhãn phụ'} hint={canEdit ? 'Bấm Tạo nhãn phụ để soạn nội dung bổ sung cho sản phẩm.' : 'Chưa có nhãn phụ nào.'} action={canEdit ? <button className="btn btn-primary" onClick={onNew}><Plus size={15} />Tạo nhãn phụ</button> : undefined} /></div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -98,6 +104,7 @@ function ListView({ canEdit, onNew, onEdit }: any) {
               </div>
             );
           })}
+          <Paginator page={safePage} pageSize={pageSize} total={total} onPage={setPage} />
         </div>
       )}
     </>

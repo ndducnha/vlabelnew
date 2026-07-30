@@ -4,7 +4,7 @@ import { Loader2, Plus, Trash2, Tag, Layers, Send, Undo2, ExternalLink, Download
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, Drawer } from '../components/ui';
+import { PageHead, Spinner, EmptyState, Drawer, Paginator } from '../components/ui';
 import { PERMISSIONS, APPENDIX_GROUPS, appendixGroupByCode } from '@vlabel/shared';
 
 const STATUS: Record<string, { cls: string; label: string }> = {
@@ -22,12 +22,18 @@ export default function Elabels() {
   const canEdit = can(PERMISSIONS.PRODUCT_UPDATE);
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
+  const [page, setPage] = useState(1);
   const [edit, setEdit] = useState<any>(null);
   const [batches, setBatches] = useState<any>(null);
+  const pageSize = 10;
 
   const list = useQuery({ queryKey: ['elabels', status], queryFn: () => api.get('/elabels', { params: { status: status || undefined } }).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['elabels'] });
-  const rows = (list.data ?? []).filter((p: any) => !q || p.name?.toLowerCase().includes(q.toLowerCase()) || (p.gtin ?? '').includes(q));
+  const filtered = (list.data ?? []).filter((p: any) => !q || p.name?.toLowerCase().includes(q.toLowerCase()) || (p.gtin ?? '').includes(q));
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(page, pages);
+  const rows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const setSt = useMutation({
     mutationFn: ({ id, status, recallReason }: any) => api.post(`/elabels/${id}/status`, { status, recallReason }),
@@ -41,9 +47,9 @@ export default function Elabels() {
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
-            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm sản phẩm theo tên / GTIN…" value={q} onChange={(e) => setQ(e.target.value)} />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm sản phẩm theo tên / GTIN…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
           </div>
-          <select className="input" style={{ width: 170 }} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <select className="input" style={{ width: 170 }} value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
             <option value="">Tất cả trạng thái</option>
             <option value="draft">Nháp</option>
             <option value="published">Đã công bố</option>
@@ -51,7 +57,7 @@ export default function Elabels() {
           </select>
         </>} />
 
-      {list.isLoading ? <Spinner /> : rows.length === 0 ? (
+      {list.isLoading ? <Spinner /> : total === 0 ? (
         <div className="card anim-in"><EmptyState title={q ? 'Không tìm thấy sản phẩm' : 'Chưa có nhãn'} hint={q ? 'Thử từ khóa khác theo tên hoặc GTIN.' : 'Nhãn điện tử được tạo từ sản phẩm ở mục Quản lý sản phẩm. Vào đây để soạn nội dung nhãn và công bố.'} /></div>
       ) : (
         <>
@@ -118,6 +124,7 @@ export default function Elabels() {
               );
             })}
           </div>
+          <Paginator page={safePage} pageSize={pageSize} total={total} onPage={setPage} />
         </>
       )}
 

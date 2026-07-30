@@ -79,6 +79,28 @@ export function ProgressBar({ value }: { value: number }) {
   );
 }
 
+export function Paginator({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (p: number) => void }) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (pages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-3 mt-5">
+      <button className="btn btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>← Trước</button>
+      <span className="text-sm text-[var(--muted)]">Trang {page}/{pages} · {total} mục</span>
+      <button className="btn btn-sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>Sau →</button>
+    </div>
+  );
+}
+
+// Hook lọc theo từ khóa + phân trang phía client (dùng cho các trang quản lý).
+export function usePaged<T>(items: T[], match: (it: T, q: string) => boolean, q: string, page: number, pageSize = 10) {
+  const filtered = q.trim() ? items.filter((it) => match(it, q.trim().toLowerCase())) : items;
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  const safe = Math.min(page, pages);
+  const rows = filtered.slice((safe - 1) * pageSize, safe * pageSize);
+  return { rows, total, page: safe, pages };
+}
+
 export function Avatar({ name, size = 32 }: { name?: string; size?: number }) {
   const initials = (name ?? '?').split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase();
   return (
