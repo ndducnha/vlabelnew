@@ -83,14 +83,44 @@ export default function PublicTrace() {
               <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: C.faint, marginTop: 1 }}>NHÃN ĐIỆN TỬ</div>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: C.chipBg, border: `1px solid ${C.chipBorder}`, padding: '5px 9px 5px 7px', borderRadius: 999 }}>
-            <ShieldCheck size={13} color={C.navy} strokeWidth={2.4} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: C.navy }}>Đã xác thực</span>
+          <div style={{ position: 'relative' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 9, background: C.chipBg, border: `1px solid ${C.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy }}>
+              <ShieldCheck size={16} strokeWidth={2.2} />
+            </div>
+            <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: C.green, border: '2px solid #f7f4ee' }} />
+          </div>
+        </div>
+
+        {/* DẢI XÁC THỰC · ĐỒNG BỘ QUỐC GIA */}
+        <div style={{ margin: '13px 16px 0', background: 'linear-gradient(135deg,#eef1fb,#f6f4ee)', border: `1px solid ${C.chipBorder}`, borderRadius: 16, padding: '13px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 7px 18px -6px rgba(31,58,109,.6)' }}>
+              <ShieldCheck size={22} color="#fff" strokeWidth={2} />
+            </div>
+            <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 13, height: 13, borderRadius: '50%', background: C.green, border: '2.5px solid #f3f2ee' }} />
+          </div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: C.navy, fontWeight: 700, marginBottom: 4 }}>ĐÃ XÁC THỰC BỞI VLABEL</div>
+            {label?.portalConnected ? (
+              <>
+                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Đã đồng bộ thông tin về cơ sở dữ liệu Quốc Gia</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
+                  {['Truy xuất nguồn gốc', 'Nhãn điện tử'].map((x) => (
+                    <span key={x} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `1px solid ${C.chipBorder}`, borderRadius: 999, padding: '4px 9px 4px 6px', fontSize: 10.5, fontWeight: 600, color: C.navy }}>
+                      <span style={{ width: 14, height: 14, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={9} color="#fff" strokeWidth={4} /></span>
+                      {x}
+                    </span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Thông tin nhãn điện tử đã được xác thực trên nền tảng Vlabel.</div>
+            )}
           </div>
         </div>
 
         {/* HERO */}
-        <div style={{ padding: '18px 16px 6px' }}>
+        <div style={{ padding: '16px 16px 6px' }}>
           {company && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <div style={{ width: 34, height: 34, borderRadius: 9, background: C.chipBg, border: '1px solid #e0e5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy, flexShrink: 0 }}>
@@ -124,13 +154,6 @@ export default function PublicTrace() {
             GTIN {d.product.gtin}{label?.brand ? ` · ${label.brand}` : ''}
           </div>
           {d.product.description && <p style={{ fontSize: 13.5, lineHeight: 1.55, color: C.muted, marginTop: 8, textWrap: 'pretty' as any }}>{d.product.description}</p>}
-
-          {label?.portalConnected && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 14, background: C.chipBg, border: `1px solid ${C.chipBorder}`, borderRadius: 12, padding: '9px 12px' }}>
-              <span style={{ width: 20, height: 20, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={12} color="#fff" strokeWidth={3.5} /></span>
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: C.navy, lineHeight: 1.35 }}>Đã đồng bộ với cơ sở dữ liệu Quốc gia</span>
-            </div>
-          )}
 
           {stats.length > 0 && (
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>

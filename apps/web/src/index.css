@@ -116,6 +116,10 @@ body{margin:0;background:var(--surface);color:var(--ink);
 .pop{ animation:pop .4s cubic-bezier(.18,1.25,.4,1) both; }
 @keyframes pop{ 0%{ transform:scale(.6); opacity:0; } 60%{ transform:scale(1.08); } 100%{ transform:scale(1); opacity:1; } }
 
+/* Chấm tín hiệu "đang đồng bộ" cho trang QR công khai */
+.vl-pulse{ animation:vlPulse 1.9s ease-in-out infinite; }
+@keyframes vlPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(125,212,166,.55); } 70%{ box-shadow:0 0 0 7px rgba(125,212,166,0); } }
+
 .skel{ background:linear-gradient(90deg,var(--surface),var(--border),var(--surface)); background-size:200% 100%; animation:sh 1.3s infinite; border-radius:8px; }
 @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
