@@ -80,13 +80,14 @@ export function ProgressBar({ value }: { value: number }) {
 }
 
 export function Paginator({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (p: number) => void }) {
+  if (total === 0) return null;
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (pages <= 1) return null;
+  const multi = pages > 1;
   return (
     <div className="flex items-center justify-center gap-3 mt-5">
-      <button className="btn btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>← Trước</button>
-      <span className="text-sm text-[var(--muted)]">Trang {page}/{pages} · {total} mục</span>
-      <button className="btn btn-sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>Sau →</button>
+      {multi && <button className="btn btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>← Trước</button>}
+      <span className="text-sm text-[var(--muted)]">{multi ? <>Trang {page}/{pages} · </> : null}{total} mục</span>
+      {multi && <button className="btn btn-sm" disabled={page >= pages} onClick={() => onPage(page + 1)}>Sau →</button>}
     </div>
   );
 }
