@@ -50,6 +50,7 @@ export default function PublicTrace() {
   const hasNp = !!d.supplementary;
   const hasLabel = !!label;
   const hasTx = (d.timeline?.length ?? 0) > 0;
+  const synced = hasLabel || hasTx || hasNp;   // có nội dung đã công bố = đã đồng bộ Quốc gia
 
   // Tab mặc định theo ưu tiên: nhãn phụ > nhãn điện tử > truy xuất; đưa tab đó lên đầu
   const defaultTab: 'sp' | 'dn' | 'tx' | 'np' = hasNp ? 'np' : hasLabel ? 'sp' : hasTx ? 'tx' : 'sp';
@@ -101,9 +102,9 @@ export default function PublicTrace() {
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: C.navy, fontWeight: 700, marginBottom: 4 }}>ĐÃ XÁC THỰC BỞI VLABEL</div>
-            {label?.portalConnected ? (
+            {synced ? (
               <>
-                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Đã đồng bộ thông tin về cơ sở dữ liệu Quốc Gia</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Đã đồng bộ thông tin về cơ sở dữ liệu Quốc gia</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
                   {['Truy xuất nguồn gốc', 'Nhãn điện tử'].map((x) => (
                     <span key={x} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `1px solid ${C.chipBorder}`, borderRadius: 999, padding: '4px 9px 4px 6px', fontSize: 10.5, fontWeight: 600, color: C.navy }}>
@@ -223,7 +224,7 @@ export default function PublicTrace() {
               </div>
             )}
 
-            {label?.portalConnected && (
+            {hasLabel && (
               <div style={{ background: C.navy, borderRadius: 18, padding: 16, display: 'flex', gap: 13, alignItems: 'flex-start', boxShadow: '0 12px 30px -14px rgba(31,58,109,.55)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
                 <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(255,255,255,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
