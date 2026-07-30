@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldCheck, MapPin, Leaf, AlertTriangle, Building2, FileText, Package, Globe, Boxes, ImageIcon, Award, Info, ChevronRight } from 'lucide-react';
+import { ShieldCheck, MapPin, Leaf, AlertTriangle, Building2, FileText, Package, Globe, Boxes, ImageIcon, Award, Info, ChevronRight, Check } from 'lucide-react';
 import { api, fileUrl } from '../lib/api';
 import { Spinner } from '../components/ui';
 
@@ -12,7 +12,7 @@ export default function PublicTrace() {
   const [sp] = useSearchParams();
   const lot = sp.get('lot') ?? undefined;
   const serial = sp.get('serial') ?? undefined;
-  const [tab, setTab] = useState<'sp' | 'dn' | 'tx' | 'np'>('sp');
+  const [manualTab, setManualTab] = useState<'sp' | 'dn' | 'tx' | 'np' | null>(null);
 
   const q = useQuery({ queryKey: ['trace', gtin, lot, serial], queryFn: () => api.get(`/public/t/${gtin}`, { params: { lot, serial } }).then((r) => r.data) });
 
@@ -28,47 +28,74 @@ export default function PublicTrace() {
   const owner = label?.owner ?? null;
   const recalled = label?.status === 'recalled';
   const heroImg = (Array.isArray(label?.images) && label.images.find((i: any) => i?.url)?.url) || (d.product.image ? fileUrl(d.product.image) : null);
-  const TABS = [
-    { k: 'sp' as const, label: 'Sản phẩm', icon: Package },
+
+  // Có những loại nội dung nào?
+  const hasNp = !!d.supplementary;                 // nhãn phụ
+  const hasLabel = !!label;                         // nhãn điện tử (đã công bố / thu hồi)
+  const hasTx = (d.timeline?.length ?? 0) > 0;      // truy xuất nguồn gốc (txng)
+
+  // Tab mặc định theo ưu tiên: nhãn phụ > nhãn điện tử > truy xuất
+  const defaultTab: 'sp' | 'dn' | 'tx' | 'np' = hasNp ? 'np' : hasLabel ? 'sp' : hasTx ? 'tx' : 'sp';
+  const tab = manualTab ?? defaultTab;
+
+  // Danh sách tab, đưa tab mặc định lên đầu tiên
+  const baseTabs = [
+    { k: 'sp' as const, label: 'Nhãn điện tử', icon: Package },
     { k: 'dn' as const, label: 'Doanh nghiệp', icon: Building2 },
-    ...(d.supplementary ? [{ k: 'np' as const, label: 'Nhãn phụ', icon: FileText }] : []),
+    ...(hasNp ? [{ k: 'np' as const, label: 'Nhãn phụ', icon: FileText }] : []),
     { k: 'tx' as const, label: 'Truy xuất', icon: Leaf },
   ];
+  const TABS = [...baseTabs.filter((t) => t.k === defaultTab), ...baseTabs.filter((t) => t.k !== defaultTab)];
 
   return (
     <div style={{ background: 'var(--surface)', minHeight: '100vh' }}>
       <div className="max-w-[540px] mx-auto pb-16">
-        {/* Hero */}
-        <div className="relative px-6 pt-9 pb-16 text-white overflow-hidden"
-          style={{ borderRadius: '0 0 28px 28px', background: 'linear-gradient(155deg,var(--accent-press),var(--accent) 55%,var(--accent-2))' }}>
+        {/* Banner nổi bật: tên sản phẩm + ảnh + trạng thái đồng bộ */}
+        <div className="relative px-6 pt-8 pb-20 text-white overflow-hidden"
+          style={{ borderRadius: '0 0 30px 30px', background: 'linear-gradient(155deg,var(--accent-press),var(--accent) 55%,var(--accent-2))' }}>
           <div aria-hidden className="absolute -right-10 -top-10 w-52 h-52 rounded-full" style={{ background: 'rgba(255,255,255,.10)' }} />
           <div aria-hidden className="absolute -left-14 bottom-0 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,.08)' }} />
           <div className="relative z-10">
-            <div className="flex items-center gap-1.5 text-[13px] font-semibold opacity-95 mb-4"><ShieldCheck size={16} /> Đã xác thực bởi Vlabel</div>
-            <div className="flex gap-2 flex-wrap">
-              {label && <span className="pill-glass"><ShieldCheck size={13} />{label.status === 'published' ? 'Nhãn điện tử' : label.status === 'recalled' ? 'Đã thu hồi' : 'Nhãn'}</span>}
-              {label?.portalConnected && <span className="pill-glass"><Globe size={13} />Hộ chiếu số</span>}
-              {d.supplementary && <span className="pill-glass"><FileText size={13} />Có nhãn phụ</span>}
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold opacity-95 mb-5"><ShieldCheck size={16} /> Đã xác thực bởi Vlabel</div>
+
+            <div className="flex items-center gap-4">
+              {heroImg
+                ? <img src={heroImg} alt="" className="w-[76px] h-[76px] rounded-2xl object-cover flex-none" style={{ border: '3px solid rgba(255,255,255,.55)', boxShadow: '0 8px 22px rgba(0,0,0,.22)' }} />
+                : <span className="w-[76px] h-[76px] rounded-2xl grid place-items-center text-4xl flex-none" style={{ background: 'rgba(255,255,255,.18)' }}>🏷️</span>}
+              <div className="min-w-0">
+                <h1 className="text-[25px] font-extrabold leading-[1.12] tracking-tight" style={{ textWrap: 'balance' as any }}>{d.product.name}</h1>
+                <div className="text-[12.5px] opacity-90 mt-1 mono">{label?.brand ? `${label.brand} · ` : ''}{d.product.gtin}</div>
+              </div>
+            </div>
+
+            {label?.portalConnected && (
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full pl-2 pr-4 py-1.5 font-bold text-[13.5px]"
+                style={{ background: 'rgba(255,255,255,.22)', backdropFilter: 'blur(6px)' }}>
+                <span className="w-[22px] h-[22px] rounded-full grid place-items-center flex-none" style={{ background: '#fff', color: 'var(--good)' }}><Check size={14} strokeWidth={3.5} /></span>
+                Đã đồng bộ với cơ sở dữ liệu Quốc gia
+              </div>
+            )}
+
+            <div className="flex gap-2 flex-wrap mt-3.5">
+              {label && label.status === 'published' && <span className="pill-glass" style={{ fontSize: 14, padding: '8px 15px' }}><ShieldCheck size={16} />Nhãn điện tử</span>}
+              {label?.status === 'recalled' && <span className="pill-glass" style={{ fontSize: 14, padding: '8px 15px', background: 'rgba(226,55,68,.35)' }}><AlertTriangle size={16} />Đã thu hồi</span>}
+              {hasNp && <span className="pill-glass"><FileText size={13} />Có nhãn phụ</span>}
+              {hasTx && <span className="pill-glass"><Leaf size={13} />Truy xuất nguồn gốc</span>}
             </div>
           </div>
         </div>
 
-        {/* Product card nổi lên trên hero */}
-        <div className="px-5 -mt-11 relative z-10">
-          <div className="card p-4 flex items-center gap-3.5" style={{ boxShadow: 'var(--shadow-md)' }}>
-            {heroImg
-              ? <img src={heroImg} alt="" className="w-16 h-16 rounded-2xl object-cover flex-none border" style={{ borderColor: 'var(--border)' }} />
-              : <span className="w-16 h-16 rounded-2xl grid place-items-center text-3xl flex-none" style={{ background: 'var(--accent-soft)' }}>🏷️</span>}
-            <div className="flex-1 min-w-0">
-              <b className="text-[17px] leading-tight block">{d.product.name}</b>
-              <div className="text-[12.5px] text-[var(--muted)] mt-0.5">{label?.brand ? `${label.brand} · ` : ''}<span className="mono">{d.product.gtin}</span></div>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {(d.item?.batchOrLot || label?.batch?.batchCode) && <span className="chip" style={{ fontSize: 11 }}>Lô {label?.batch?.batchCode ?? d.item?.batchOrLot}</span>}
-                {label && <span className="chip chip-accent" style={{ fontSize: 11 }}>Rủi ro: {RISK[label.riskLevel ?? 0]}</span>}
-              </div>
+        {/* Thẻ thông tin nhanh nổi lên trên banner */}
+        {(label?.batch?.batchCode || d.item?.batchOrLot || label || label?.netContent) && (
+          <div className="px-5 -mt-12 relative z-10">
+            <div className="card p-3.5 flex flex-wrap items-center gap-2" style={{ boxShadow: 'var(--shadow-md)' }}>
+              {(label?.batch?.batchCode || d.item?.batchOrLot) && <span className="chip"><Boxes size={13} />Lô {label?.batch?.batchCode ?? d.item?.batchOrLot}</span>}
+              {label?.netContent && <span className="chip"><Package size={13} />{label.netContent}</span>}
+              {label && <span className="chip chip-accent">Rủi ro: {RISK[label.riskLevel ?? 0]}</span>}
+              {label?.countryOfOrigin && <span className="chip"><Globe size={13} />{label.countryOfOrigin}</span>}
             </div>
           </div>
-        </div>
+        )}
 
         <div className="px-5 pt-4 flex flex-col gap-3.5">
           {recalled && (
@@ -81,7 +108,7 @@ export default function PublicTrace() {
           {/* Tabs dính */}
           <div className="sticky top-2 z-20 flex gap-1 p-1 rounded-[13px]" style={{ background: 'color-mix(in srgb,var(--bg) 88%,transparent)', border: '1px solid var(--border)', backdropFilter: 'blur(10px)', boxShadow: 'var(--shadow-sm)' }}>
             {TABS.map((t) => (
-              <button key={t.k} onClick={() => setTab(t.k)}
+              <button key={t.k} onClick={() => setManualTab(t.k)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[9px] text-[12.5px] font-bold transition-colors"
                 style={tab === t.k ? { background: 'var(--accent)', color: '#fff' } : { color: 'var(--muted)' }}>
                 <t.icon size={15} /> {t.label}
@@ -224,7 +251,12 @@ export default function PublicTrace() {
             </div>
           )}
 
-          <div className="text-center text-xs text-[var(--faint)] py-3 flex items-center justify-center gap-1.5"><ShieldCheck size={13} /> Được xác thực bởi <b>Vlabel</b></div>
+          {/* Hỗ trợ bởi Vlabel */}
+          <a href="https://vlabel.vn" target="_blank" rel="noreferrer"
+            className="flex flex-col items-center gap-2 pt-6 pb-2 mt-1 transition-opacity hover:opacity-80">
+            <img src="/logo.jpg" alt="Vlabel" className="h-9 rounded-xl" style={{ boxShadow: 'var(--shadow-sm)' }} />
+            <span className="text-[12.5px] text-[var(--muted)]">Hỗ trợ bởi <b className="text-[var(--ink-2)]">Vlabel</b></span>
+          </a>
         </div>
       </div>
     </div>
