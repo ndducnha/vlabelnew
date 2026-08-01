@@ -61,6 +61,20 @@ export class ProductsController {
     return this.products.setFlows(user, id, flowIds ?? []);
   }
 
+  // Gắn THÊM một Flow (hỗ trợ nhiều Flow / sản phẩm) — bổ sung, không thay setFlows
+  @Post(':id/flows/attach')
+  @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
+  attachFlow(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body('flowId') flowId: string) {
+    return this.products.attachFlow(user, id, flowId);
+  }
+
+  // Gỡ một Flow khỏi sản phẩm
+  @Delete(':id/flows/:flowId')
+  @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
+  detachFlow(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('flowId') flowId: string) {
+    return this.products.detachFlow(user, id, flowId);
+  }
+
   @Patch(':id')
   @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
   update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { name?: string; description?: string; dynamicAttributes?: Record<string, unknown>; organizationId?: string; traceMode?: string }) {

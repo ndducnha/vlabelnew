@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Info, Network, Package, GitBranch, ClipboardEdit,
-  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles,
+  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles, LayoutList,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -21,6 +21,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Truy xuất nguồn gốc',
     items: [
+      { to: '/trace-manage', label: 'Quản lý', icon: LayoutList, perm: PERMISSIONS.FLOW_MANAGE },
       { to: '/flows', label: 'Flow & Event', icon: GitBranch, perm: PERMISSIONS.FLOW_MANAGE },
       { to: '/entry', label: 'Kê khai', icon: ClipboardEdit, perm: PERMISSIONS.EVENT_RECORD_CREATE },
       { to: '/tasks', label: 'Lịch truy xuất', icon: CalendarClock, perm: PERMISSIONS.EVENT_RECORD_CREATE },

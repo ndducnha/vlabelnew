@@ -126,6 +126,27 @@ export class ProductsService {
     return { ok: true, flowId: flow?.id ?? null };
   }
 
+  /** Gắn THÊM một Flow vào sản phẩm mà không gỡ các Flow hiện có (hỗ trợ nhiều Flow / sản phẩm). */
+  async attachFlow(user: AuthUser, productId: string, flowId: string) {
+    const product = await this.prisma.product.findFirst({ where: { id: productId, tenantId: user.tenantId } });
+    if (!product) throw new NotFoundException('Không tìm thấy sản phẩm');
+    const flow = await this.prisma.flow.findFirst({ where: { id: flowId, tenantId: user.tenantId, deletedAt: null } });
+    if (!flow) throw new NotFoundException('Không tìm thấy Flow');
+    const exists = await this.prisma.productFlow.findUnique({ where: { productId_flowId: { productId, flowId } } });
+    if (!exists) await this.prisma.productFlow.create({ data: { productId, flowId } });
+    await this.audit.log({ tenantId: user.tenantId, actorUserId: user.sub, action: 'ATTACH_FLOW', resource: 'product', resourceId: productId, meta: { flowId } });
+    return { ok: true, flowId };
+  }
+
+  /** Gỡ một Flow khỏi sản phẩm (không ảnh hưởng các Flow khác). */
+  async detachFlow(user: AuthUser, productId: string, flowId: string) {
+    const product = await this.prisma.product.findFirst({ where: { id: productId, tenantId: user.tenantId } });
+    if (!product) throw new NotFoundException('Không tìm thấy sản phẩm');
+    await this.prisma.productFlow.deleteMany({ where: { productId, flowId } });
+    await this.audit.log({ tenantId: user.tenantId, actorUserId: user.sub, action: 'DETACH_FLOW', resource: 'product', resourceId: productId, meta: { flowId } });
+    return { ok: true };
+  }
+
   /** Sửa thông tin cơ bản của sản phẩm (không đổi GTIN). */
   async update(user: AuthUser, id: string, dto: { name?: string; description?: string; dynamicAttributes?: Record<string, unknown>; organizationId?: string; traceMode?: string }) {
     const product = await this.prisma.product.findFirst({ where: { id, tenantId: user.tenantId, deletedAt: null } });

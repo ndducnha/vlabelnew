@@ -16,6 +16,7 @@ import Elabels from './pages/Elabels';
 import Supplementary from './pages/Supplementary';
 import Users from './pages/Users';
 import Helper from './pages/Helper';
+import TraceManage from './pages/TraceManage';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -46,6 +47,7 @@ export default function App() {
         <Route path="/supplementary" element={<Supplementary />} />
         <Route path="/users" element={<Users />} />
         <Route path="/helper" element={<Helper />} />
+        <Route path="/trace-manage" element={<TraceManage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
