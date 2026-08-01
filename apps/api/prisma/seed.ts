@@ -153,14 +153,23 @@ async function main() {
     { code: 'XUAT_XUONG', where: 'Kho thành phẩm', action: 'Cấp chứng nhận, xuất xưởng', values: { cert: `CN-${lot}`, warranty: 12 } },
   ];
 
+  // Toạ độ GPS cho các địa điểm (để Bản đồ hành trình có sẵn điểm thật)
+  const WHERE_GPS: Record<string, [number, number]> = {
+    'Kho NVL Bình Dương': [10.95, 106.63], 'NM Dược Bình Dương': [10.98, 106.65], 'Phòng QA': [10.982, 106.652], 'Bộ phận Đóng gói': [10.981, 106.654], 'Kho thành phẩm': [11.0, 106.67],
+    'Kho NVL TP.HCM': [10.74, 106.66], 'Bộ phận Sản xuất': [10.77, 106.69], 'Bộ phận Kiểm nghiệm': [10.772, 106.692], 'Xưởng đóng gói': [10.775, 106.695], 'Kho phân phối': [10.8, 106.72],
+    'Kho vật tư': [10.93, 106.82], 'Xưởng gia công': [10.95, 106.84], 'Bộ phận Lắp ráp': [10.952, 106.842], 'Bộ phận Kiểm định': [10.954, 106.844],
+    'Trung tâm phân phối HCM': [10.78, 106.70], 'Cửa hàng Guardian Q1': [10.7769, 106.7009],
+  };
+
   // ── Helpers tạo trace ──
   const rec = async (product: any, flow: any, item: any, s: Step, who: string, whoId: string, whenISO: string) => {
+    const gps = WHERE_GPS[s.where];
     const r = await prisma.eventRecord.create({
       data: {
         tenantId: tenant.id, organizationId: product.organizationId, traceableItemId: item.id, flowVersionId: flow.versionId,
         eventDefinitionId: flow.defByCode.get(s.code)!, gtin: product.gtin,
         performedByUserId: whoId, performedByName: who, enteredByUserId: whoId, approvedByUserId: whoId,
-        location: s.where, performedAt: new Date(whenISO), action: s.action, status: 'APPROVED',
+        location: s.where, gpsLat: gps?.[0] ?? null, gpsLng: gps?.[1] ?? null, performedAt: new Date(whenISO), action: s.action, status: 'APPROVED',
         values: { create: Object.entries(s.values).map(([fieldKey, v]) => ({ fieldKey, valueJson: v as any })) },
       },
     });
@@ -315,6 +324,20 @@ async function main() {
   await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uPharma2.id, flowId: pharmaFlow.flowId, eventDefinitionId: pharmaFlow.defByCode.get('DONG_GOI')! } });
   await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uBeauty2.id, flowId: beautyFlow.flowId, eventDefinitionId: beautyFlow.defByCode.get('DONG_GOI')! } });
   await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uPccc2.id, flowId: pcccFlow.flowId, eventDefinitionId: pcccFlow.defByCode.get('XUAT_XUONG')! } });
+
+  // Hành trình cho Flow phân phối (gắn vào item đã có của các sản phẩm nhiều Flow)
+  const distSteps: Step[] = [
+    { code: 'NHAP_KHO', where: 'Kho phân phối', action: 'Nhập kho phân phối', values: { warehouse: 'Kho phân phối miền Nam', temp: 22 } },
+    { code: 'VAN_CHUYEN', where: 'Trung tâm phân phối HCM', action: 'Vận chuyển tới điểm bán', values: { vehicle: 'Xe tải lạnh', route: 'Bình Dương → TP.HCM' }, media: true },
+    { code: 'GIAO_HANG', where: 'Cửa hàng Guardian Q1', action: 'Giao đến điểm bán lẻ', values: { store: 'Guardian Nguyễn Huệ' } },
+  ];
+  for (const [body, lot, who] of [['893110000001', 'LOT-PARA-2407', uPharma2], ['893120000001', 'LOT-KEM-2407', uBeauty2], ['893130000001', 'LOT-CO2-2407', uPccc2]] as [string, string, any][]) {
+    const prod = registry[body]; if (!prod) continue;
+    const item = await prisma.traceableItem.findFirst({ where: { productId: prod.id, batchOrLot: lot, deletedAt: null } });
+    if (!item) continue;
+    const base = new Date('2026-08-05T02:00:00Z').getTime();
+    for (let i = 0; i < distSteps.length; i++) await rec(prod, distFlow, item, distSteps[i], who.fullName, who.id, new Date(base + i * day).toISOString());
+  }
 
   // ── Lịch truy xuất (nhiệm vụ) đủ trạng thái ──
   const task = (name: string, body: string, lot: string, flow: any, orgId: string, assignee: any, start: string, end: string, status: string) =>

@@ -40,6 +40,8 @@ export const DEFAULT_LOCATIONS: Loc[] = [
   D('Xưởng gia công', 'XUONG-GC', 'factory', 10.95, 106.84),
   D('Bộ phận Lắp ráp', 'BP-LR', 'factory', 10.952, 106.842),
   D('Bộ phận Kiểm định', 'BP-KD', 'qc', 10.954, 106.844),
+  D('Trung tâm phân phối HCM', 'TT-PP-HCM', 'distributor', 10.78, 106.70, 'TP. Hồ Chí Minh'),
+  D('Cửa hàng Guardian Q1', 'CH-GUARDIAN-Q1', 'store', 10.7769, 106.7009, 'Nguyễn Huệ, Q1, TP.HCM'),
 ];
 
 export function loadLocations(): Loc[] {
