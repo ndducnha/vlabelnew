@@ -24,7 +24,7 @@ export default function JourneyScreen({ route }: any) {
     return recs.map((r: any) => ({ event: r.eventDefinition?.name ?? 'Sự kiện', location: r.location ?? '—', performer: r.performedBy?.fullName ?? r.performedByName ?? '—', at: r.performedAt, lat: r.gpsLat, lng: r.gpsLng }));
   }, [records.data, lot]);
 
-  const gps = stops.filter((s) => s.lat != null && s.lng != null);
+  const gps = stops.filter((s: any) => s.lat != null && s.lng != null);
   const html = useMemo(() => buildLeaflet(gps), [gps]);
 
   return (
@@ -42,7 +42,7 @@ export default function JourneyScreen({ route }: any) {
           <WebView originWhitelist={['*']} source={{ html }} style={{ flex: 1 }} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
-          {stops.map((s, i) => (
+          {stops.map((s: any, i: number) => (
             <Card key={i} style={{ flexDirection: 'row', gap: 12 }}>
               <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: '#fff', fontWeight: '800' }}>{i + 1}</Text></View>
               <View style={{ flex: 1 }}>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../lib/auth';
 import { apiError } from '../../lib/api';
@@ -28,10 +28,7 @@ export default function LoginScreen({ navigation }: any) {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: t.surface }}>
       <View style={{ flex: 1, paddingHorizontal: 22, justifyContent: 'center', paddingTop: insets.top }}>
         <View style={{ alignItems: 'center', marginBottom: 26 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-            <Text style={{ color: '#fff', fontSize: 30, fontWeight: '800' }}>V</Text>
-          </View>
-          <Text style={{ fontSize: 26, fontWeight: '800', color: t.ink }}>VLabel</Text>
+          <Image source={require('../../../assets/logo.jpg')} style={{ width: 84, height: 84, borderRadius: 20, marginBottom: 14 }} resizeMode="contain" />
           <Text style={{ color: t.muted, marginTop: 4 }}>Chuẩn hóa dữ liệu, số hóa niềm tin.</Text>
         </View>
 

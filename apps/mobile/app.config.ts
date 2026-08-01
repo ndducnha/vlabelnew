@@ -18,7 +18,8 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic', // hỗ trợ dark mode theo hệ thống
-  splash: { backgroundColor: '#2E5BE8', resizeMode: 'contain' },
+  icon: './assets/logo.jpg',
+  splash: { image: './assets/logo.jpg', backgroundColor: '#2E5BE8', resizeMode: 'contain' },
   assetBundlePatterns: ['**/*'],
   ios: { supportsTablet: true, bundleIdentifier: 'vn.vlabel.mobile', infoPlist: { NSCameraUsageDescription: 'Quét mã QR và chụp ảnh minh chứng khai báo.', NSPhotoLibraryUsageDescription: 'Chọn ảnh minh chứng từ thư viện.', NSLocationWhenInUseUsageDescription: 'Chọn vị trí thực hiện Event trên bản đồ.' } },
   android: {
