@@ -2,8 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { SupplementaryLabelsService } from './supplementary-labels.service';
+import { setStatusSchema, type SetStatusInput } from './supplementary-labels.dto';
 
 @ApiTags('supplementary-labels')
 @ApiBearerAuth()
@@ -43,7 +45,7 @@ export class SupplementaryLabelsController {
 
   @Post(':id/status')
   @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
-  setStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { status: string }) {
+  setStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body(new ZodValidationPipe(setStatusSchema)) dto: SetStatusInput) {
     return this.svc.setStatus(user, id, dto.status);
   }
 

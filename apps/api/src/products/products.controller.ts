@@ -8,6 +8,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
 import type { AuthUser } from '../common/types';
 import { ProductsService } from './products.service';
+import { updateProductSchema, type UpdateProductInput } from './products.dto';
 
 @ApiTags('products')
 @ApiBearerAuth()
@@ -77,7 +78,7 @@ export class ProductsController {
 
   @Patch(':id')
   @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
-  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { name?: string; description?: string; dynamicAttributes?: Record<string, unknown>; organizationId?: string; traceMode?: string }) {
+  update(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body(new ZodValidationPipe(updateProductSchema)) dto: UpdateProductInput) {
     return this.products.update(user, id, dto);
   }
 

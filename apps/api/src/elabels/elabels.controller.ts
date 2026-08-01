@@ -2,8 +2,13 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { ElabelsService } from './elabels.service';
+import {
+  setStatusSchema, setBatchStatusSchema,
+  type SetStatusInput, type SetBatchStatusInput,
+} from './elabels.dto';
 
 @ApiTags('elabels')
 @ApiBearerAuth()
@@ -51,7 +56,7 @@ export class ElabelsController {
 
   @Post(':id/status')
   @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
-  setStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { status: string; recallReason?: string }) {
+  setStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body(new ZodValidationPipe(setStatusSchema)) dto: SetStatusInput) {
     return this.elabels.setStatus(user, id, dto.status, dto.recallReason);
   }
 
@@ -69,7 +74,7 @@ export class ElabelsController {
 
   @Post(':id/batches/:batchId/status')
   @RequirePermissions(PERMISSIONS.PRODUCT_UPDATE)
-  setBatchStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('batchId') batchId: string, @Body() dto: { status: string; recallReason?: string }) {
+  setBatchStatus(@CurrentUser() user: AuthUser, @Param('id') id: string, @Param('batchId') batchId: string, @Body(new ZodValidationPipe(setBatchStatusSchema)) dto: SetBatchStatusInput) {
     return this.elabels.setBatchStatus(user, id, batchId, dto.status, dto.recallReason);
   }
 

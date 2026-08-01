@@ -2,8 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestj
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { TraceTasksService } from './trace-tasks.service';
+import { createTraceTaskSchema, type CreateTraceTaskInput } from './trace-tasks.dto';
 
 @ApiTags('trace-tasks')
 @ApiBearerAuth()
@@ -19,7 +21,7 @@ export class TraceTasksController {
 
   @Post()
   @RequirePermissions(PERMISSIONS.FLOW_MANAGE)
-  create(@CurrentUser() user: AuthUser, @Body() dto: { name?: string; productId: string; lot?: string; flowId?: string; organizationId?: string; assignedUserId: string; startDate: string; endDate: string; note?: string }) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createTraceTaskSchema)) dto: CreateTraceTaskInput) {
     return this.tasks.create(user, dto);
   }
 

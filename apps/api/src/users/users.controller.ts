@@ -2,8 +2,10 @@ import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { UsersService } from './users.service';
+import { createUserSchema, type CreateUserInput } from './users.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -38,7 +40,7 @@ export class UsersController {
 
   @Post()
   @RequirePermissions(PERMISSIONS.USER_MANAGE)
-  create(@CurrentUser() user: AuthUser, @Body() dto: { email: string; fullName: string; password: string; organizationId?: string; roleKeys?: string[]; scopeOrgIds?: string[] }) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createUserSchema)) dto: CreateUserInput) {
     return this.users.create(user, dto);
   }
 

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "prisma generate && nest build",
+    "typecheck": "tsc --noEmit",
     "start:prod": "node dist/main.js",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",

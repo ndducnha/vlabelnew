@@ -2,8 +2,10 @@ import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { QrService } from './qr.service';
+import { generateQrSchema, type GenerateQrInput } from './qr.dto';
 
 @ApiTags('qr')
 @ApiBearerAuth()
@@ -19,7 +21,7 @@ export class QrController {
 
   @Post('generate')
   @RequirePermissions(PERMISSIONS.QR_MANAGE)
-  generate(@CurrentUser() user: AuthUser, @Body() dto: { gtin: string; lot?: string; serial?: string; quantity?: number; traceableItemId?: string }) {
+  generate(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(generateQrSchema)) dto: GenerateQrInput) {
     return this.qr.generate(user, dto);
   }
 

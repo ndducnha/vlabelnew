@@ -1,9 +1,14 @@
 import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, type FieldType } from '@vlabel/shared';
+import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { CategoriesService } from './categories.service';
+import {
+  createCategorySchema, addFieldSchema,
+  type CreateCategoryInput, type AddFieldInput,
+} from './categories.dto';
 
 @ApiTags('categories')
 @ApiBearerAuth()
@@ -19,14 +24,14 @@ export class CategoriesController {
 
   @Post()
   @RequirePermissions(PERMISSIONS.CATEGORY_MANAGE)
-  create(@CurrentUser() user: AuthUser, @Body() dto: { name: string; code: string }) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createCategorySchema)) dto: CreateCategoryInput) {
     return this.categories.create(user, dto);
   }
 
   @Post(':id/fields')
   @RequirePermissions(PERMISSIONS.FIELD_MANAGE)
   addField(@CurrentUser() user: AuthUser, @Param('id') id: string,
-    @Body() dto: { key: string; label: string; type: FieldType; required?: boolean; options?: string[]; publicVisible?: boolean }) {
+    @Body(new ZodValidationPipe(addFieldSchema)) dto: AddFieldInput) {
     return this.categories.addField(user, id, dto);
   }
 

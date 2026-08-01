@@ -1,9 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import { PERMISSIONS, type FieldType } from '@vlabel/shared';
+import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { FlowsService } from './flows.service';
+import {
+  createFlowSchema, updateFlowSchema, addEventSchema, updateEventSchema,
+  addFieldSchema, updateFieldSchema, assignPermissionSchema,
+  type CreateFlowInput, type UpdateFlowInput, type AddEventInput, type UpdateEventInput,
+  type AddFieldInput, type UpdateFieldInput, type AssignPermissionInput,
+} from './flows.dto';
 
 @ApiTags('flows')
 @ApiBearerAuth()
@@ -19,7 +26,7 @@ export class FlowsController {
 
   @Post('flows')
   @RequirePermissions(PERMISSIONS.FLOW_MANAGE)
-  create(@CurrentUser() user: AuthUser, @Body() dto: { name: string; code: string; categoryId?: string; organizationIds?: string[] }) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createFlowSchema)) dto: CreateFlowInput) {
     return this.flows.createFlow(user, dto);
   }
 
@@ -31,7 +38,7 @@ export class FlowsController {
 
   @Patch('flows/:id')
   @RequirePermissions(PERMISSIONS.FLOW_MANAGE)
-  updateFlow(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { name?: string; code?: string; categoryId?: string; organizationIds?: string[] }) {
+  updateFlow(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body(new ZodValidationPipe(updateFlowSchema)) dto: UpdateFlowInput) {
     return this.flows.updateFlow(user, id, dto);
   }
 
@@ -57,14 +64,14 @@ export class FlowsController {
   @Post('flow-versions/:versionId/events')
   @RequirePermissions(PERMISSIONS.EVENT_DEF_MANAGE)
   addEvent(@CurrentUser() user: AuthUser, @Param('versionId') versionId: string,
-    @Body() dto: { name: string; code: string; required?: boolean; enterRoleKeys?: string[]; approveRoleKeys?: string[] }) {
+    @Body(new ZodValidationPipe(addEventSchema)) dto: AddEventInput) {
     return this.flows.addEvent(user, versionId, dto);
   }
 
   @Patch('event-definitions/:id')
   @RequirePermissions(PERMISSIONS.EVENT_DEF_MANAGE)
   updateEvent(@CurrentUser() user: AuthUser, @Param('id') id: string,
-    @Body() dto: { name?: string; order?: number; required?: boolean; enterRoleKeys?: string[]; approveRoleKeys?: string[] }) {
+    @Body(new ZodValidationPipe(updateEventSchema)) dto: UpdateEventInput) {
     return this.flows.updateEvent(user, id, dto);
   }
 
@@ -78,14 +85,14 @@ export class FlowsController {
   @Post('event-definitions/:id/fields')
   @RequirePermissions(PERMISSIONS.EVENT_DEF_MANAGE)
   addField(@CurrentUser() user: AuthUser, @Param('id') id: string,
-    @Body() dto: { key: string; label: string; type: FieldType; required?: boolean; publicVisible?: boolean; options?: string[] }) {
+    @Body(new ZodValidationPipe(addFieldSchema)) dto: AddFieldInput) {
     return this.flows.addField(user, id, dto);
   }
 
   @Patch('event-fields/:id')
   @RequirePermissions(PERMISSIONS.EVENT_DEF_MANAGE)
   updateField(@CurrentUser() user: AuthUser, @Param('id') id: string,
-    @Body() dto: { label?: string; required?: boolean; publicVisible?: boolean; options?: string[] }) {
+    @Body(new ZodValidationPipe(updateFieldSchema)) dto: UpdateFieldInput) {
     return this.flows.updateField(user, id, dto);
   }
 
@@ -104,7 +111,7 @@ export class FlowsController {
 
   @Post('flows/:id/permissions')
   @RequirePermissions(PERMISSIONS.FLOW_MANAGE)
-  assignPermission(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body() dto: { userId: string; eventDefinitionId?: string }) {
+  assignPermission(@CurrentUser() user: AuthUser, @Param('id') id: string, @Body(new ZodValidationPipe(assignPermissionSchema)) dto: AssignPermissionInput) {
     return this.flows.assignPermission(user, id, dto);
   }
 

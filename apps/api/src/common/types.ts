@@ -1,10 +1,2 @@
-export interface AuthUser {
-  sub: string; // user id
-  tenantId: string;
-  organizationId: string | null;
-  email: string;
-  fullName: string;
-  roles: string[];
-  permissions: string[];
-  scopeOrgIds: string[];
-}
+// Nguồn chân lý AuthUser nằm ở @vlabel/shared (dùng chung api + web + mobile).
+export type { AuthUser } from '@vlabel/shared';

@@ -2,8 +2,10 @@ import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/commo
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { OrganizationsService } from './organizations.service';
+import { createOrganizationSchema, type CreateOrganizationInput } from './organizations.dto';
 
 @ApiTags('organizations')
 @ApiBearerAuth()
@@ -23,7 +25,7 @@ export class OrganizationsController {
 
   @Post()
   @RequirePermissions(PERMISSIONS.ORGANIZATION_MANAGE)
-  create(@CurrentUser() user: AuthUser, @Body() dto: { name: string; code: string; type: string; parentId?: string }) {
+  create(@CurrentUser() user: AuthUser, @Body(new ZodValidationPipe(createOrganizationSchema)) dto: CreateOrganizationInput) {
     return this.orgs.create(user, dto);
   }
 

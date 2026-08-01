@@ -2,8 +2,10 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PERMISSIONS } from '@vlabel/shared';
 import { CurrentUser, RequirePermissions } from '../common/decorators';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import type { AuthUser } from '../common/types';
 import { TenantsService } from './tenants.service';
+import { createTenantSchema, type CreateTenantInput } from './tenants.dto';
 
 @ApiTags('tenants')
 @ApiBearerAuth()
@@ -19,7 +21,7 @@ export class TenantsController {
 
   @Post()
   @RequirePermissions(PERMISSIONS.TENANT_MANAGE)
-  create(@CurrentUser() actor: AuthUser, @Body() dto: { name: string; code: string; rootOrgName?: string; adminName: string; adminEmail: string; adminPassword: string }) {
+  create(@CurrentUser() actor: AuthUser, @Body(new ZodValidationPipe(createTenantSchema)) dto: CreateTenantInput) {
     return this.tenants.create(actor, dto);
   }
 }
