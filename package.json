@@ -5,7 +5,8 @@
   "description": "Vlabel — nền tảng truy xuất nguồn gốc đa tenant (GTIN + VNPC)",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/api",
+    "apps/web"
   ],
   "scripts": {
     "dev": "npm-run-all --parallel dev:api dev:web",
@@ -15,10 +16,21 @@
     "db:migrate": "npm run db:migrate -w @vlabel/api",
     "db:seed": "npm run db:seed -w @vlabel/api",
     "db:reset": "npm run db:reset -w @vlabel/api",
-    "test": "npm run test -w @vlabel/api"
+    "test": "npm run test -w @vlabel/api",
+    "typecheck": "npm run typecheck -w @vlabel/shared && npm run typecheck -w @vlabel/api && npm run typecheck -w @vlabel/web && npm --prefix apps/mobile run typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
-    "npm-run-all": "^4.1.5"
+    "eslint": "^9.39.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.8.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.65.0"
   },
   "engines": {
     "node": ">=20"
