@@ -15,6 +15,7 @@ import TraceTasks from './pages/TraceTasks';
 import Elabels from './pages/Elabels';
 import Supplementary from './pages/Supplementary';
 import Users from './pages/Users';
+import Helper from './pages/Helper';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/elabels" element={<Elabels />} />
         <Route path="/supplementary" element={<Supplementary />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/helper" element={<Helper />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

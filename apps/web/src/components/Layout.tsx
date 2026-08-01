@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Info, Network, Package, GitBranch, ClipboardEdit,
-  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText,
+  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -36,6 +36,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   {
     title: 'VLabel',
     items: [
+      { to: '/helper', label: 'VLabel Helper', icon: Sparkles, perm: PERMISSIONS.PRODUCT_UPDATE },
       { to: '/', label: 'VLabel Workspace', icon: LayoutDashboard, end: true },
     ],
   },
