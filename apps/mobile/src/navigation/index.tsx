@@ -63,7 +63,7 @@ function ManagerTabs() {
     <Tab.Navigator screenOptions={opts}>
       <Tab.Screen name="Dashboard" component={DashboardScreen} options={{ title: 'Tổng quan', tabBarIcon: icon('grid') }} />
       <Tab.Screen name="Manage" component={ManageScreen} options={{ title: 'Quản lý', tabBarIcon: icon('cube') }} />
-      <Tab.Screen name="Helper" component={HelperScreen} options={{ title: 'Helper', tabBarIcon: icon('sparkles') }} />
+      <Tab.Screen name="Helper" component={HelperScreen} options={{ title: 'Trợ lý', tabBarIcon: icon('sparkles') }} />
       <Tab.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Thông báo', tabBarIcon: icon('notifications') }} />
       <Tab.Screen name="Account" component={AccountScreen} options={{ title: 'Tài khoản', tabBarIcon: icon('person') }} />
     </Tab.Navigator>

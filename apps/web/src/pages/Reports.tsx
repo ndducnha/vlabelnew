@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Package, GitBranch, QrCode, ScanLine, CheckCircle2, FileEdit } from '../lib/icons';
 import { api } from '../lib/api';
-import { PageHead, Spinner, StatCard, ProgressBar } from '../components/ui';
+import { PageHead, Spinner, ProgressBar } from '../components/ui';
 
 const CARDS = [
   { key: 'products', label: 'Sản phẩm', icon: Package, tone: 'accent' },
-  { key: 'flows', label: 'Flow', icon: GitBranch, tone: 'accent' },
+  { key: 'flows', label: 'Luồng', icon: GitBranch, tone: 'accent' },
   { key: 'qrCodes', label: 'Mã QR', icon: QrCode, tone: 'accent' },
   { key: 'scans', label: 'Lượt quét', icon: ScanLine, tone: 'good' },
   { key: 'pendingApprovals', label: 'Chờ duyệt', icon: CheckCircle2, tone: 'warn' },
@@ -19,13 +19,23 @@ export default function Reports() {
   return (
     <>
       <PageHead eyebrow="Thống kê" title="Báo cáo & phân tích" subtitle="Thống kê tổng quan hệ thống" />
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 mb-5">
-        {CARDS.map((c) => (
-          <StatCard key={c.key} icon={<c.icon size={16} />} label={c.label} value={<span className="num">{q.data?.[c.key] ?? 0}</span>} tone={c.tone} />
-        ))}
+
+      {/* Bản kê chỉ số — khối kẻ ô kiểu sổ cái */}
+      <div className="rule rule-strong" style={{ margin: '0 0 0' }} />
+      <div className="kpi grid-cols-2 md:grid-cols-3 mb-6" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+        {CARDS.map((c) => {
+          const value = q.data?.[c.key] ?? 0;
+          return (
+            <div key={c.key}>
+              <div className="k"><c.icon size={13} />{c.label}</div>
+              <div className="v" style={{ color: c.tone === 'warn' && value ? 'var(--warn)' : 'var(--ink)' }}>{value}</div>
+            </div>
+          );
+        })}
       </div>
+
       <div className="card p-5">
-        <h3 className="font-semibold mb-4">So sánh chỉ số</h3>
+        <div className="eyebrow mb-4">So sánh chỉ số</div>
         <div className="flex flex-col gap-3.5">
           {CARDS.map((c) => (
             <div key={c.key} className="flex items-center gap-3">

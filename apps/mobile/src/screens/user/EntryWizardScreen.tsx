@@ -50,7 +50,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
   const step = steps[Math.min(idx, steps.length - 1)];
   const total = steps.length;
 
-  const TITLES: Record<string, string> = { product: 'Sản phẩm / lô', flow: 'Chọn quy trình', event: 'Chọn công đoạn', who: 'Ai thực hiện?', location: 'Thực hiện ở đâu?', activity: 'Đã làm gì?', fields: 'Thông tin khai báo', media: 'Hình ảnh / minh chứng', review: 'Xem lại & gửi' };
+  const TITLES: Record<string, string> = { product: 'Sản phẩm / lô', flow: 'Chọn quy trình', event: 'Chọn sự kiện', who: 'Ai thực hiện?', location: 'Thực hiện ở đâu?', activity: 'Đã làm gì?', fields: 'Thông tin khai báo', media: 'Hình ảnh / minh chứng', review: 'Xem lại & gửi' };
 
   const requiredOk = (event?.fields ?? []).filter((f: any) => f.required).every((f: any) => values[f.key] !== undefined && values[f.key] !== '');
   const canNext =
@@ -106,7 +106,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
               {(products.data ?? []).map((p) => (
                 <Card key={p.id} onPress={() => { setProductId(p.id); setFlowId(''); setEvent(null); }} style={{ marginBottom: 8, borderColor: productId === p.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Icon name="cube-outline" size={20} color={t.accent} />
-                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{p.name}</Text><Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{p.gtin} · {(p.flows ?? []).length} flow</Text></View>
+                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{p.name}</Text><Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{p.gtin} · {(p.flows ?? []).length} luồng</Text></View>
                   {productId === p.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
                 </Card>
               ))}
@@ -131,7 +131,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
 
       {step === 'event' && (
         events.isLoading ? <Loading /> :
-          (events.data ?? []).length === 0 ? <Card><AppText muted>Bạn chưa được cấp quyền kê khai công đoạn nào của quy trình này.</AppText></Card> :
+          (events.data ?? []).length === 0 ? <Card><AppText muted>Bạn chưa được cấp quyền kê khai sự kiện nào của quy trình này.</AppText></Card> :
             <View style={{ gap: 8 }}>
               {(events.data ?? []).map((ev: any) => (
                 <Card key={ev.id} onPress={() => setEvent(ev)} style={{ borderColor: event?.id === ev.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -174,7 +174,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
       )}
 
       {step === 'review' && (() => {
-        const rows: [string, any][] = [['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Lô', lot || '—'], ['Công đoạn', event?.name], ['Người thực hiện', performer], ['Địa điểm', location || '—'], ['Hành động', action || '—'], ['Ảnh', `${media.length} tệp`]];
+        const rows: [string, any][] = [['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Lô', lot || '—'], ['Sự kiện', event?.name], ['Người thực hiện', performer], ['Địa điểm', location || '—'], ['Hành động', action || '—'], ['Ảnh', `${media.length} tệp`]];
         return (
           <RowsCard>
             {rows.map(([k, v], i) => <Row key={k} label={k} value={String(v ?? '—')} last={i === rows.length - 1} />)}

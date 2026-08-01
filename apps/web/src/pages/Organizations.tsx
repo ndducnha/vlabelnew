@@ -80,7 +80,7 @@ export default function Organizations() {
             </span>
           )}
         </div>
-        {has && open && <div className="ml-5 pl-3" style={{ borderLeft: '1.5px solid var(--border)' }}>{node.children.map((c, i, arr) => <Row key={c.id} node={c} index={i} count={arr.length} />)}</div>}
+        {has && open && <div className="ml-5 pl-3" style={{ borderLeft: '1px solid var(--hairline)' }}>{node.children.map((c, i, arr) => <Row key={c.id} node={c} index={i} count={arr.length} />)}</div>}
       </div>
     );
   };
@@ -101,7 +101,9 @@ export default function Organizations() {
           {canManage && <button className="btn btn-primary" onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: null }); }}><Plus size={16} />Đơn vị gốc</button>}
         </>} />
       {tree.isLoading ? <Spinner /> : ql ? (
-        <div className="card p-2.5 max-w-[640px]">
+        <div className="card p-2.5 max-w-[640px]" style={{ boxShadow: 'none' }}>
+          <div className="eyebrow px-2 pt-1 pb-2.5">Kết quả tìm kiếm · {matches.length}</div>
+          <hr className="rule" style={{ margin: '0 0 6px' }} />
           {matches.length === 0
             ? <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy đơn vị phù hợp.</p>
             : matches.map((n) => {
@@ -120,7 +122,7 @@ export default function Organizations() {
               })}
         </div>
       ) : roots.length === 0 ? (
-        <div className="card max-w-[640px]">
+        <div className="card max-w-[640px]" style={{ boxShadow: 'none' }}>
           <EmptyState
             title="Chưa có đơn vị nào"
             hint="Tạo đơn vị gốc để bắt đầu xây dựng cây tổ chức."
@@ -128,7 +130,11 @@ export default function Organizations() {
           />
         </div>
       ) : (
-        <div className="card p-2.5 max-w-[640px]">{roots.map((n, i, arr) => <Row key={n.id} node={n} index={i} count={arr.length} />)}</div>
+        <div className="card p-2.5 max-w-[640px]" style={{ boxShadow: 'none' }}>
+          <div className="eyebrow px-2 pt-1 pb-2.5">Cây đơn vị</div>
+          <hr className="rule" style={{ margin: '0 0 6px' }} />
+          {roots.map((n, i, arr) => <Row key={n.id} node={n} index={i} count={arr.length} />)}
+        </div>
       )}
 
       {/* Create drawer */}
@@ -140,7 +146,7 @@ export default function Organizations() {
           <span className="pill pill-accent">Cấp {createLevel + 1}</span>
         </p>
         <label className="block mb-3"><span className="label">Tên</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-        <label className="block"><span className="label">Mã (unique)</span><input className="input mono" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></label>
+        <label className="block"><span className="label">Mã (duy nhất)</span><input className="input mono" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} /></label>
       </Drawer>
     </>
   );

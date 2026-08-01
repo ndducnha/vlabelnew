@@ -7,13 +7,13 @@ type IconComponent = ComponentType<{ size?: number }>;
 
 const ROLES = [
   ['Kê khai', 'Nhập dữ liệu cho các sự kiện theo quyền được phân.'],
-  ['Quản lý', 'Cấu hình Flow/Event, người dùng và phân quyền trong tổ chức.'],
+  ['Quản lý', 'Cấu hình Luồng/Sự kiện, người dùng và phân quyền trong tổ chức.'],
   ['Admin', 'Toàn quyền, cấu hình tổ chức từ cấp 2 trở xuống.'],
   ['Superadmin', 'Toàn quyền, cấu hình cả tổ chức cấp 1.'],
 ];
 const STEPS = [
   'Thiết lập cây tổ chức và tài khoản người dùng.',
-  'Tạo sản phẩm (GTIN hoặc tra cứu VNPC) và thiết kế Flow gồm các sự kiện.',
+  'Tạo sản phẩm (GTIN hoặc tra cứu VNPC) và thiết kế Luồng gồm các sự kiện.',
   'Phân quyền khai cho người dùng, cấp và gán mã QR cho từng lô.',
   'Người kê khai nhập dữ liệu, quản lý duyệt và khoá.',
   'Người tiêu dùng quét QR để xem hành trình đã xác thực.',
@@ -44,7 +44,7 @@ export default function Intro() {
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
         {([
           [QrCode, 'QR', 'Mỗi sản phẩm/lô có mã QR dẫn tới trang truy xuất và nhãn điện tử.'],
-          [GitBranch, 'Flow & Event', 'Quy trình gồm nhiều sự kiện theo chuẩn GS1 EPCIS: Ai, Ở đâu, Khi nào, Thông tin, Media.'],
+          [GitBranch, 'Luồng & Sự kiện', 'Quy trình gồm nhiều sự kiện theo chuẩn GS1 EPCIS: Ai, Ở đâu, Khi nào, Thông tin, Media.'],
           [Tag, 'Nhãn điện tử', 'Nội dung nhãn theo Nghị định 37/2026, chọn nhóm hàng ra đúng trường bắt buộc.'],
           [ShieldCheck, 'Xác thực', 'Người tiêu dùng quét QR xem hành trình đã được xác thực, công khai.'],
         ] as [IconComponent, string, string][]).map(([Icon, title, desc], i) => (

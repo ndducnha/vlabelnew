@@ -28,7 +28,7 @@ export default function HelperScreen({ navigation }: any) {
   ];
   return (
     <Screen>
-      <Title eyebrow="Trợ lý thiết lập" sub="Bạn muốn làm gì?">VLabel Helper</Title>
+      <Title eyebrow="Trợ lý thiết lập" sub="Bạn muốn làm gì?">Trợ lý VLabel</Title>
       <View style={{ gap: 12 }}>
         {OPTS.map((o) => (
           <Card key={o.m} onPress={() => setMode(o.m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>

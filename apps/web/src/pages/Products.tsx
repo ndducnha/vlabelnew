@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History, Search } from '../lib/icons';
+import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History, Search, Package } from '../lib/icons';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
@@ -30,9 +30,21 @@ export default function Products() {
     successMessage: 'Đã đồng bộ lên Cổng truy xuất nguồn gốc quốc gia',
   });
 
+  // Nhóm hành động dùng chung cho cả bảng (desktop) và card (mobile) — logic y nguyên
+  const rowActions = (p: any) => (
+    <>
+      {canEdit && <button className="btn btn-sm" onClick={() => setEditProduct(p)}><Pencil size={13} />Sửa</button>}
+      <button className="btn btn-sm" onClick={() => setTraceProduct(p)}><History size={13} />Truy xuất</button>
+      <button className="btn btn-sm" onClick={() => setQrProduct(p)}><QrCode size={13} />Tải QR</button>
+      <a className="btn btn-sm" href={`/t/${p.gtin}`} target="_blank" rel="noreferrer">Xem</a>
+      {canEdit && <button className="btn btn-sm" title="Đồng bộ lên Cổng truy xuất nguồn gốc quốc gia" disabled={sync.isPending} onClick={() => sync.mutate(p.id)}><UploadCloud size={13} />Đồng bộ</button>}
+      {canEdit && <button className="btn btn-sm btn-danger" title="Xoá sản phẩm" onClick={() => { if (window.confirm(`Xoá sản phẩm "${p.name}"?`)) del.mutate(p.id); }}><Trash2 size={13} /></button>}
+    </>
+  );
+
   return (
     <>
-      <PageHead eyebrow="Sản phẩm" title="Quản lý sản phẩm" subtitle="Gắn GTIN với tên & thông tin, gán Flow truy xuất, tải QR"
+      <PageHead eyebrow="Sản phẩm" title="Quản lý sản phẩm" subtitle="Gắn GTIN với tên & thông tin, gán Luồng truy xuất, tải QR"
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -46,34 +58,77 @@ export default function Products() {
       ) : (
         <div className="flex flex-col gap-3">
           {paged.total === 0 && <div className="card"><EmptyState title="Không tìm thấy sản phẩm phù hợp." hint="Thử từ khoá khác cho tên, GTIN hoặc đơn vị." /></div>}
-          {paged.rows.map((p: any) => (
-            <div key={p.id} className="card card-hover anim-in p-4 flex flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-5">
-              <div className="min-w-0 flex-1 flex flex-col gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <b className="text-[15px] tracking-tight">{p.name}</b>
-                  <span className={`chip ${p.traceMode === 'PER_LOT' ? 'chip-accent' : ''}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
-                    <QrCode size={11} />{p.traceMode === 'PER_LOT' ? 'QR / lô' : '1 QR chung'}
-                  </span>
-                </div>
-                {p.description && <div className="text-[13px] text-[var(--muted)] leading-relaxed">{p.description}</div>}
-                <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[12.5px]">
-                  <span className="mono text-[var(--muted)]"><span className="text-[var(--faint)] font-semibold uppercase tracking-wide text-[10.5px] mr-1.5">GTIN</span>{p.gtin}</span>
-                  <span className="text-[var(--muted)]"><span className="text-[var(--faint)] font-semibold uppercase tracking-wide text-[10.5px] mr-1.5">Đơn vị</span>{p.organization?.name ?? 'Chưa gán'}</span>
-                  {(p.flows ?? []).length === 0
-                    ? <span className="pill pill-warn"><i />Chưa gán Flow</span>
-                    : <span className="chip"><GitBranch size={12} />{p.flows[0].flow.name}</span>}
-                </div>
+
+          {paged.total > 0 && (
+            <>
+              {/* Sổ cái cho desktop */}
+              <div className="hidden lg:block anim-in overflow-x-auto">
+                <table className="ledger text-sm">
+                  <thead><tr>
+                    <th style={{ width: 52 }}>Mục</th>
+                    {['Sản phẩm', 'Đơn vị', 'Chế độ', 'Luồng', 'Hành động'].map((h) => <th key={h}>{h}</th>)}
+                  </tr></thead>
+                  <tbody>
+                    {paged.rows.map((p: any, i: number) => (
+                      <tr key={p.id}>
+                        <td><span className="ledger-idx">{String((paged.page - 1) * 10 + i + 1).padStart(2, '0')}</span></td>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <ProductThumb />
+                            <div className="min-w-0">
+                              <b className="block truncate">{p.name}</b>
+                              <div className="text-xs text-[var(--muted)] mono">{p.gtin}</div>
+                              {p.description && <div className="text-[11.5px] text-[var(--faint)] truncate max-w-[280px]">{p.description}</div>}
+                            </div>
+                          </div>
+                        </td>
+                        <td><span className="text-[var(--ink-2)]">{p.organization?.name ?? <span className="text-[var(--faint)]">Chưa gán</span>}</span></td>
+                        <td>
+                          <span className={`chip ${p.traceMode === 'PER_LOT' ? 'chip-accent' : ''}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                            <QrCode size={11} />{p.traceMode === 'PER_LOT' ? 'QR / lô' : '1 QR chung'}
+                          </span>
+                        </td>
+                        <td>
+                          {(p.flows ?? []).length === 0
+                            ? <span className="pill pill-warn"><i />Chưa gán Luồng</span>
+                            : <span className="chip"><GitBranch size={12} />{p.flows[0].flow.name}</span>}
+                        </td>
+                        <td>
+                          <div className="flex gap-1.5 flex-wrap justify-end">{rowActions(p)}</div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex gap-1.5 flex-wrap lg:flex-none lg:justify-end">
-                {canEdit && <button className="btn btn-sm" onClick={() => setEditProduct(p)}><Pencil size={13} />Sửa</button>}
-                <button className="btn btn-sm" onClick={() => setTraceProduct(p)}><History size={13} />Truy xuất</button>
-                <button className="btn btn-sm" onClick={() => setQrProduct(p)}><QrCode size={13} />Tải QR</button>
-                <a className="btn btn-sm" href={`/t/${p.gtin}`} target="_blank" rel="noreferrer">Xem</a>
-                {canEdit && <button className="btn btn-sm" title="Đồng bộ lên Cổng truy xuất nguồn gốc quốc gia" disabled={sync.isPending} onClick={() => sync.mutate(p.id)}><UploadCloud size={13} />Đồng bộ</button>}
-                {canEdit && <button className="btn btn-sm btn-danger" title="Xoá sản phẩm" onClick={() => { if (window.confirm(`Xoá sản phẩm "${p.name}"?`)) del.mutate(p.id); }}><Trash2 size={13} /></button>}
+
+              {/* Card cho mobile */}
+              <div className="flex flex-col gap-3 lg:hidden">
+                {paged.rows.map((p: any) => (
+                  <div key={p.id} className="card card-hover anim-in p-4 flex flex-col gap-3.5">
+                    <div className="min-w-0 flex-1 flex flex-col gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <b className="text-[15px] tracking-tight">{p.name}</b>
+                        <span className={`chip ${p.traceMode === 'PER_LOT' ? 'chip-accent' : ''}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                          <QrCode size={11} />{p.traceMode === 'PER_LOT' ? 'QR / lô' : '1 QR chung'}
+                        </span>
+                      </div>
+                      {p.description && <div className="text-[13px] text-[var(--muted)] leading-relaxed">{p.description}</div>}
+                      <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[12.5px]">
+                        <span className="mono text-[var(--muted)]"><span className="text-[var(--faint)] font-semibold uppercase tracking-wide text-[10.5px] mr-1.5">GTIN</span>{p.gtin}</span>
+                        <span className="text-[var(--muted)]"><span className="text-[var(--faint)] font-semibold uppercase tracking-wide text-[10.5px] mr-1.5">Đơn vị</span>{p.organization?.name ?? 'Chưa gán'}</span>
+                        {(p.flows ?? []).length === 0
+                          ? <span className="pill pill-warn"><i />Chưa gán Luồng</span>
+                          : <span className="chip"><GitBranch size={12} />{p.flows[0].flow.name}</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1.5 flex-wrap">{rowActions(p)}</div>
+                  </div>
+                ))}
               </div>
-            </div>
-          ))}
+            </>
+          )}
+
           <Paginator page={paged.page} pageSize={10} total={paged.total} onPage={setPage} />
         </div>
       )}
@@ -82,6 +137,15 @@ export default function Products() {
       {qrProduct && <ProductQr product={qrProduct} onClose={() => setQrProduct(null)} />}
       {traceProduct && <TraceRecords product={traceProduct} onClose={() => setTraceProduct(null)} />}
     </>
+  );
+}
+
+/** Ô thumbnail vuông cho hàng sổ cái (Products chưa có ảnh nhãn → placeholder). */
+function ProductThumb({ size = 40 }: { size?: number }) {
+  return (
+    <span className="rounded-xl grid place-items-center flex-none" style={{ width: size, height: size, background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+      <Package size={size * 0.45} />
+    </span>
   );
 }
 
@@ -121,10 +185,10 @@ function TraceRecords({ product, onClose }: { product: any; onClose: () => void 
       {recs.isLoading ? <Spinner /> : editing ? (
         <div>
           <div className="text-sm text-[var(--muted)] mb-3">Sửa sự kiện: <b className="text-[var(--ink)]">{editing.eventDefinition?.name}</b></div>
-          <label className="block mb-3"><span className="label">Người thực hiện (Who)</span><input className="input" value={form.performedByName} onChange={(e) => setForm({ ...form, performedByName: e.target.value })} /></label>
-          <label className="block mb-3"><span className="label">Thời gian (When)</span><input className="input" type="datetime-local" value={form.when} onChange={(e) => setForm({ ...form, when: e.target.value })} /></label>
-          <label className="block mb-3"><span className="label">Địa điểm (Where)</span><input className="input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label>
-          <label className="block mb-3"><span className="label">Hành động (What)</span><input className="input" value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} /></label>
+          <label className="block mb-3"><span className="label">Người thực hiện</span><input className="input" value={form.performedByName} onChange={(e) => setForm({ ...form, performedByName: e.target.value })} /></label>
+          <label className="block mb-3"><span className="label">Thời gian</span><input className="input" type="datetime-local" value={form.when} onChange={(e) => setForm({ ...form, when: e.target.value })} /></label>
+          <label className="block mb-3"><span className="label">Địa điểm</span><input className="input" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} /></label>
+          <label className="block mb-3"><span className="label">Hành động</span><input className="input" value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} /></label>
           {(editing.eventDefinition?.fields ?? []).map((f: any) => (
             <label key={f.id} className="block mb-3"><span className="label">{f.label}</span>
               <input className="input" value={form.values[f.key] ?? ''} onChange={(e) => setForm({ ...form, values: { ...form.values, [f.key]: e.target.value } })} /></label>
@@ -200,7 +264,7 @@ function EditProduct({ product, onClose }: { product: any; onClose: () => void }
           );
         })}
       </div>
-      <span className="label">Flow truy xuất (một flow)</span>
+      <span className="label">Luồng truy xuất (một luồng)</span>
       {flows.isLoading ? <Spinner /> : (
         <div className="flex flex-col gap-2.5">
           {(flows.data ?? []).map((f) => {
@@ -216,11 +280,11 @@ function EditProduct({ product, onClose }: { product: any; onClose: () => void }
           })}
         </div>
       )}
-      <div className="text-xs text-[var(--muted)] mt-2.5">{flowId ? '' : 'Chưa chọn nghĩa là bỏ gán Flow.'}</div>
+      <div className="text-xs text-[var(--muted)] mt-2.5">{flowId ? '' : 'Chưa chọn nghĩa là bỏ gán Luồng.'}</div>
 
       {flowId && (
         <div className="mt-5 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-          <span className="label">Người được kê khai flow này</span>
+          <span className="label">Người được kê khai luồng này</span>
           <div className="text-[11.5px] text-[var(--muted)] mb-2">Cấp quyền khai theo người ngay tại đây (hoặc tự động khi giao Lịch truy xuất).</div>
           <FlowEnterers flowId={flowId} />
         </div>

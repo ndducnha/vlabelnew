@@ -54,27 +54,31 @@ export default function Elabels() {
         <div className="card anim-in"><EmptyState title={q ? 'Không tìm thấy sản phẩm' : 'Chưa có nhãn'} hint={q ? 'Thử từ khóa khác theo tên hoặc GTIN.' : 'Nhãn điện tử được tạo từ sản phẩm ở mục Quản lý sản phẩm. Vào đây để soạn nội dung nhãn và công bố.'} /></div>
       ) : (
         <>
-          {/* Bảng cho màn hình lớn */}
-          <div className="card overflow-hidden p-0 hidden md:block anim-in">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-[var(--muted)]" style={{ borderBottom: '1px solid var(--border)' }}>
-                <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide">Nhãn</th><th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide">Trạng thái</th>
-                <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide">Lô</th><th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide text-right">Thao tác</th>
+          {/* Sổ cái cho màn hình lớn */}
+          <div className="hidden md:block anim-in overflow-x-auto">
+            <table className="ledger text-sm">
+              <thead><tr>
+                <th style={{ width: 52 }}>Mục</th>
+                <th>Nhãn</th>
+                <th>Trạng thái</th>
+                <th>Lô</th>
+                <th className="text-right">Thao tác</th>
               </tr></thead>
-              <tbody className="rows">
-                {rows.map((p) => {
+              <tbody>
+                {rows.map((p, i) => {
                   const s = STATUS[p.elabelStatus ?? ''] ?? STATUS.draft;
                   return (
-                    <tr key={p.id} className="card-hover">
-                      <td className="px-5 py-3.5">
+                    <tr key={p.id}>
+                      <td><span className="ledger-idx">{String((safePage - 1) * pageSize + i + 1).padStart(2, '0')}</span></td>
+                      <td>
                         <div className="flex items-center gap-3">
                           <span className="iconbox"><Tag size={17} /></span>
                           <div className="min-w-0"><b>{p.name}</b>{p.brand && <span className="text-[var(--muted)]"> · {p.brand}</span>}<div className="text-xs text-[var(--muted)] mono mt-0.5">GTIN {p.gtin}</div></div>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5"><span className={`pill ${s.cls}`}><i />{s.label}</span></td>
-                      <td className="px-5 py-3.5"><button className="btn btn-sm" onClick={() => setBatches(p)}><Layers size={13} />{p.batchCount} lô</button></td>
-                      <td className="px-5 py-3.5">
+                      <td><span className={`pill ${s.cls}`}><i />{s.label}</span></td>
+                      <td><button className="btn btn-sm" onClick={() => setBatches(p)}><Layers size={13} /><span className="num">{p.batchCount}</span> lô</button></td>
+                      <td>
                         <div className="flex gap-1.5 justify-end flex-wrap">
                           <a className="btn btn-sm" href={`${PUBLIC_BASE}/t/${p.gtin}`} target="_blank" rel="noreferrer" title="Xem thử trang nhãn"><ExternalLink size={13} />Xem thử</a>
                           {canEdit && <button className="btn btn-sm" onClick={() => setEdit(p)}><Pencil size={13} />Soạn nhãn</button>}

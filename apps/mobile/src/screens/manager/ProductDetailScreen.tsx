@@ -61,7 +61,7 @@ function FlowTab({ productId, gtin, flows, attachedIds, flowsAll, onChanged, nav
         <Card key={f.id}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <Icon name="git-branch-outline" size={18} color={t.accent} />
-            <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{f.name}</Text><Text style={{ color: t.muted, fontFamily: font.body, fontSize: 12, marginTop: 1 }}>{f.versions?.[0]?.eventDefinitions?.length ?? 0} công đoạn</Text></View>
+            <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{f.name}</Text><Text style={{ color: t.muted, fontFamily: font.body, fontSize: 12, marginTop: 1 }}>{f.versions?.[0]?.eventDefinitions?.length ?? 0} sự kiện</Text></View>
           </View>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
             <Button title="QR" small variant="default" onPress={() => setQr({})} />
@@ -140,7 +140,7 @@ function AssignTab({ flows }: any) {
       {perms.isLoading ? <Loading /> : (perms.data ?? []).map((p: any) => (
         <Card key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Avatar name={p.user.fullName} size={30} />
-          <View style={{ flex: 1, gap: 5 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14 }}>{p.user.fullName}</Text><Pill label={p.eventDefinitionId ? `Công đoạn: ${p.eventDefinition?.name ?? '—'}` : 'Toàn bộ quy trình'} tone={p.eventDefinitionId ? 'neutral' : 'accent'} /></View>
+          <View style={{ flex: 1, gap: 5 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14 }}>{p.user.fullName}</Text><Pill label={p.eventDefinitionId ? `Sự kiện: ${p.eventDefinition?.name ?? '—'}` : 'Toàn bộ quy trình'} tone={p.eventDefinitionId ? 'neutral' : 'accent'} /></View>
           <Pressable onPress={() => del.mutate(p.id)}><Icon name="trash-outline" size={18} color={t.danger} /></Pressable>
         </Card>
       ))}

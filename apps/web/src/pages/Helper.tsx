@@ -39,7 +39,7 @@ const INIT: Draft = {
 };
 
 const STEPS: Record<Mode, string[]> = {
-  trace: ['Chọn sản phẩm', 'Flow truy xuất', 'Thiết lập công đoạn', 'Phạm vi áp dụng', 'Phân công khai báo', 'Xác nhận'],
+  trace: ['Chọn sản phẩm', 'Luồng truy xuất', 'Thiết lập sự kiện', 'Phạm vi áp dụng', 'Phân công khai báo', 'Xác nhận'],
   elabel: ['Chọn sản phẩm', 'Loại nhãn', 'Tên & nhãn hiệu', 'Doanh nghiệp', 'Thành phần & định lượng', 'Công dụng & bảo quản', 'Cảnh báo & rủi ro', 'Xuất xứ & nhóm hàng', 'Phạm vi áp dụng', 'Giao diện & xem trước', 'Xác nhận & phát hành'],
   supp: ['Chọn sản phẩm', 'Phạm vi áp dụng', 'Soạn nội dung', 'Xem trước', 'Lưu & phát hành'],
 };
@@ -111,7 +111,7 @@ export default function Helper() {
 
   const productFlows = (productDetail.data?.flows ?? []).map((x: any) => x.flow);
   const total = mode ? STEPS[mode].length : 0;
-  const title = mode ? STEPS[mode][step] : 'VLabel Helper';
+  const title = mode ? STEPS[mode][step] : 'Trợ lý VLabel';
 
   const selectProduct = (p: any) => { patch({ product: { id: p.id, name: p.name, gtin: p.gtin, traceMode: p.traceMode }, flowId: '', eventIds: [], elLoaded: false }); setCreating(false); };
 
@@ -171,7 +171,7 @@ export default function Helper() {
       await api.post('/trace-tasks', {
         name: `Kê khai ${product!.name}`, productId: product!.id, lot: draft.lot || undefined,
         flowId: draft.flowId || undefined, assignedUserId: draft.assigneeId,
-        startDate: startISO, endDate: endISO, note: [draft.note, names && `Công đoạn: ${names}`].filter(Boolean).join(' · ') || undefined,
+        startDate: startISO, endDate: endISO, note: [draft.note, names && `Sự kiện: ${names}`].filter(Boolean).join(' · ') || undefined,
       });
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['trace-tasks'] }); finishAll('trace'); },
@@ -253,7 +253,7 @@ export default function Helper() {
   // ════════ START ════════
   if (!mode) {
     const OPTS: { m: Mode; icon: any; label: string; desc: string }[] = [
-      { m: 'trace', icon: GitBranch, label: 'Truy xuất nguồn gốc', desc: 'Gán Flow, công đoạn, lô và phân công khai báo.' },
+      { m: 'trace', icon: GitBranch, label: 'Truy xuất nguồn gốc', desc: 'Gán Luồng, sự kiện, lô và phân công khai báo.' },
       { m: 'elabel', icon: Tag, label: 'Nhãn điện tử', desc: 'Soạn nội dung nhãn theo từng bước và phát hành.' },
       { m: 'supp', icon: FileText, label: 'Nhãn phụ', desc: 'Soạn nhãn phụ tiếng Việt hiển thị trên cùng mã QR.' },
     ];
@@ -261,7 +261,7 @@ export default function Helper() {
       <div className="max-w-[480px] mx-auto pb-6">
         <div className="text-center mb-6 mt-2">
           <div className="w-14 h-14 rounded-2xl grid place-items-center mx-auto mb-3" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}><Sparkles size={26} /></div>
-          <h1 className="text-[24px] font-extrabold tracking-tight">VLabel Helper</h1>
+          <h1 className="text-[24px] font-extrabold tracking-tight">Trợ lý VLabel</h1>
           <p className="text-[var(--muted)] mt-1 text-[14px]">Bạn muốn thực hiện chức năng nào?</p>
         </div>
         <div className="flex flex-col gap-3">
@@ -380,7 +380,7 @@ export default function Helper() {
             {shownProducts.map((p: any) => (
               <button key={p.id} onClick={() => selectProduct(p)} className={`opt ${product?.id === p.id ? 'sel' : ''}`}>
                 <span className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}><Package size={17} /></span>
-                <div className="flex-1 min-w-0"><b className="text-sm block truncate">{p.name}</b><div className="text-xs text-[var(--muted)] mono">{p.gtin} · {(p.flows ?? []).length} flow</div></div>
+                <div className="flex-1 min-w-0"><b className="text-sm block truncate">{p.name}</b><div className="text-xs text-[var(--muted)] mono">{p.gtin} · {(p.flows ?? []).length} luồng</div></div>
                 {product?.id === p.id && <Check size={18} className="text-[var(--accent)] flex-none" />}
               </button>
             ))}
@@ -407,7 +407,7 @@ export default function Helper() {
         <div className="flex flex-col gap-3">
           {productDetail.isLoading ? <Spinner /> : has ? (
             <>
-              <p className="text-[13px] text-[var(--muted)]">Sản phẩm đã có Flow. Chọn Flow để dùng (hoặc chọn Flow khác bên dưới).</p>
+              <p className="text-[13px] text-[var(--muted)]">Sản phẩm đã có Luồng. Chọn Luồng để dùng (hoặc chọn Luồng khác bên dưới).</p>
               {productFlows.map((f: any) => (
                 <button key={f.id} onClick={() => patch({ flowId: f.id, eventIds: [] })} className={`opt ${draft.flowId === f.id ? 'sel' : ''}`}>
                   <span className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}><GitBranch size={17} /></span>
@@ -416,14 +416,14 @@ export default function Helper() {
                 </button>
               ))}
             </>
-          ) : <p className="text-[13px] text-[var(--muted)]">Sản phẩm chưa có Flow. Chọn một Flow có sẵn để gán:</p>}
+          ) : <p className="text-[13px] text-[var(--muted)]">Sản phẩm chưa có Luồng. Chọn một Luồng có sẵn để gán:</p>}
 
-          <div className="label mt-1" style={{ margin: 0 }}>Chọn từ danh sách Flow</div>
+          <div className="label mt-1" style={{ margin: 0 }}>Chọn từ danh sách Luồng</div>
           <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 240 }}>
             {(flowsAll.data ?? []).map((f: any) => (
               <button key={f.id} onClick={() => patch({ flowId: f.id, eventIds: [] })} className={`opt ${draft.flowId === f.id ? 'sel' : ''}`}>
                 <span className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'var(--surface)', color: 'var(--muted)' }}><GitBranch size={17} /></span>
-                <div className="flex-1 min-w-0"><b className="text-sm block truncate">{f.name}</b><div className="text-xs text-[var(--muted)]">{f.versions?.[0]?.eventDefinitions?.length ?? 0} công đoạn</div></div>
+                <div className="flex-1 min-w-0"><b className="text-sm block truncate">{f.name}</b><div className="text-xs text-[var(--muted)]">{f.versions?.[0]?.eventDefinitions?.length ?? 0} sự kiện</div></div>
                 {draft.flowId === f.id && <Check size={17} className="text-[var(--accent)] flex-none" />}
               </button>
             ))}
@@ -436,9 +436,9 @@ export default function Helper() {
     if (step === 2) {
       return (
         <div className="flex flex-col gap-2.5">
-          <p className="text-[13px] text-[var(--muted)]">Chọn công đoạn áp dụng, sắp xếp thứ tự hoặc thêm mới. Cấu hình chi tiết từng công đoạn diễn ra khi kê khai.</p>
+          <p className="text-[13px] text-[var(--muted)]">Chọn sự kiện áp dụng, sắp xếp thứ tự hoặc thêm mới. Cấu hình chi tiết từng sự kiện diễn ra khi kê khai.</p>
           {flowDetail.isLoading ? <Spinner /> : events.length === 0 ? (
-            <p className="text-sm text-[var(--muted)]">Flow chưa có công đoạn. Thêm công đoạn bên dưới.</p>
+            <p className="text-sm text-[var(--muted)]">Luồng chưa có sự kiện. Thêm sự kiện bên dưới.</p>
           ) : events.map((ev, i) => {
             const on = draft.eventIds.includes(ev.id);
             return (
@@ -505,8 +505,8 @@ export default function Helper() {
       <div className="card p-4 flex flex-col divide-y" style={{ borderColor: 'var(--border)' }}>
         <Row k="Sản phẩm" v={product?.name} />
         <Row k="GTIN" v={product?.gtin} mono />
-        <Row k="Flow" v={flow?.name} />
-        <Row k="Công đoạn" v={`${draft.eventIds.length}/${events.length} công đoạn`} />
+        <Row k="Luồng" v={flow?.name} />
+        <Row k="Sự kiện" v={`${draft.eventIds.length}/${events.length} sự kiện`} />
         <Row k="Phạm vi" v={scopeLabel} />
         <Row k="Người phụ trách" v={assignee?.fullName} />
         <Row k="Thời hạn" v={draft.deadline || 'Mặc định +14 ngày'} />

@@ -279,7 +279,7 @@ export default function PublicTrace() {
               <div style={{ background: C.card, border: `1.5px solid ${C.navy}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 14px 34px -20px rgba(20,20,40,.22)' }}>
                 <div style={{ background: C.navy, color: '#fff', padding: '14px 16px' }}>
                   <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, lineHeight: 1 }}>NHÃN PHỤ</div>
-                  <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: '#aebbe0', marginTop: 4 }}>SUPPLEMENTARY LABEL</div>
+                  <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: '#aebbe0', marginTop: 4 }}>NHÃN BỔ SUNG</div>
                 </div>
                 <div style={{ padding: '4px 16px 14px' }} className="np-content" dangerouslySetInnerHTML={{ __html: d.supplementary.html }} />
                 <div style={{ background: '#f7f8fc', borderTop: `1px solid ${C.dash}`, padding: '11px 16px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>

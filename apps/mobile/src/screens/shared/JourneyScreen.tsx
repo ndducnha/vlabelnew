@@ -69,8 +69,8 @@ export default function JourneyScreen({ route }: any) {
         </ScrollView>
       </View>
 
-      {records.isLoading ? <Loading /> : stops.length === 0 ? <View style={{ padding: 16 }}><Empty title="Chưa có hành trình" hint="Sản phẩm/lô này chưa có Event đã duyệt." /></View> : mode === 'real' ? (
-        gps.length === 0 ? <View style={{ padding: 16 }}><Empty title="Chưa có toạ độ" hint="Các Event chưa có GPS. Xem chế độ Sơ đồ." /></View> :
+      {records.isLoading ? <Loading /> : stops.length === 0 ? <View style={{ padding: 16 }}><Empty title="Chưa có hành trình" hint="Sản phẩm/lô này chưa có Sự kiện đã duyệt." /></View> : mode === 'real' ? (
+        gps.length === 0 ? <View style={{ padding: 16 }}><Empty title="Chưa có toạ độ" hint="Các Sự kiện chưa có GPS. Xem chế độ Sơ đồ." /></View> :
           <View style={{ flex: 1 }}>
             <WebView ref={webRef} originWhitelist={['*']} source={{ html }} style={{ flex: 1 }} onLoadEnd={() => webRef.current?.injectJavaScript(`window.setCurrent && window.setCurrent(${current});true;`)} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderTopWidth: 1, borderTopColor: t.border, backgroundColor: t.bg }}>

@@ -24,13 +24,13 @@ export function NewFlow({ onCreated }: { onCreated: (id: string) => void }) {
   const [name, setName] = useState('');
   const create = useMutation({
     mutationFn: async () => { const code = 'FLW-' + name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 20) + '-' + Math.floor(Date.now() / 1000).toString().slice(-4); const { data } = await api.post('/flows', { name: name.trim(), code }); return data; },
-    onSuccess: (d) => { toast('Đã tạo Flow'); setOpen(false); setName(''); onCreated(d.id); },
+    onSuccess: (d) => { toast('Đã tạo Luồng'); setOpen(false); setName(''); onCreated(d.id); },
     onError: (e) => toast(apiError(e), false),
   });
-  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><Plus size={14} />Tạo Flow mới</button>;
+  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><Plus size={14} />Tạo Luồng mới</button>;
   return (
     <div className="card p-3.5 flex flex-col gap-2.5">
-      <F label="Tên Flow mới"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Chuỗi cung ứng dược" autoFocus /></F>
+      <F label="Tên Luồng mới"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Chuỗi cung ứng dược" autoFocus /></F>
       <div className="flex gap-2"><button className="btn flex-1 justify-center" onClick={() => setOpen(false)}>Huỷ</button>
         <button className="btn btn-primary flex-1 justify-center" disabled={!name.trim() || create.isPending} onClick={() => create.mutate()}>{create.isPending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}Tạo</button></div>
     </div>
@@ -43,14 +43,14 @@ export function AddEvent({ versionId, onAdded }: { versionId?: string; onAdded: 
   const [name, setName] = useState('');
   const add = useMutation({
     mutationFn: () => { const code = 'EV-' + name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 16) + '-' + Math.floor(Date.now() / 1000).toString().slice(-4); return api.post(`/flow-versions/${versionId}/events`, { name: name.trim(), code, enterRoleKeys: ['DATA_ENTRY', 'MANAGER'], approveRoleKeys: ['MANAGER', 'ADMIN', 'SUPERADMIN'] }); },
-    onSuccess: () => { toast('Đã thêm công đoạn'); setName(''); setOpen(false); onAdded(); },
+    onSuccess: () => { toast('Đã thêm sự kiện'); setName(''); setOpen(false); onAdded(); },
     onError: (e) => toast(apiError(e), false),
   });
   if (!versionId) return null;
-  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><Plus size={14} />Thêm công đoạn</button>;
+  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><Plus size={14} />Thêm sự kiện</button>;
   return (
     <div className="card p-3.5 flex flex-col gap-2.5">
-      <F label="Tên công đoạn"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Đóng gói" autoFocus /></F>
+      <F label="Tên sự kiện"><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="VD: Đóng gói" autoFocus /></F>
       <div className="flex gap-2"><button className="btn flex-1 justify-center" onClick={() => setOpen(false)}>Huỷ</button>
         <button className="btn btn-primary flex-1 justify-center" disabled={!name.trim() || add.isPending} onClick={() => add.mutate()}>{add.isPending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}Thêm</button></div>
     </div>
@@ -76,7 +76,7 @@ export function CloneElabel({ currentId, onCloned }: { currentId?: string; onClo
     onError: (e) => toast(apiError(e), false),
   });
   if (!currentId) return null;
-  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><FileText size={14} />Clone từ nhãn mẫu</button>;
+  if (!open) return <button className="btn btn-sm self-start" onClick={() => setOpen(true)}><FileText size={14} />Sao chép từ nhãn mẫu</button>;
   return (
     <div className="card p-3.5 flex flex-col gap-2">
       <div className="label" style={{ margin: 0 }}>Chọn nhãn mẫu để sao chép nội dung</div>

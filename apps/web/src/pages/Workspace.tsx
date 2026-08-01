@@ -63,7 +63,7 @@ function Canvas() {
     onSelect: (s: Sel) => setSel(s),
     onToggle: (id: string) => setExpanded((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }),
     onAdd: (mod: any) => setSel({ kind: 'add', mod }),
-    onAddEvent: () => { if (model?.traceability.flow.versionId) act(wsApi.addEvent(model.traceability.flow.versionId, 'Sự kiện mới'), 'Đã thêm event'); },
+    onAddEvent: () => { if (model?.traceability.flow.versionId) act(wsApi.addEvent(model.traceability.flow.versionId, 'Sự kiện mới'), 'Đã thêm sự kiện'); },
   }), [model, act]);
 
   useEffect(() => {
@@ -76,12 +76,12 @@ function Canvas() {
   return (
     <>
       <style>{WS_CSS}</style>
-      <PageHead title="VLabel Workspace" subtitle="QR ở giữa, 4 góc là các tính năng. Bấm một tính năng để xổ ra, bấm tiếp để đi sâu."
+      <PageHead title="Không gian làm việc VLabel" subtitle="QR ở giữa, 4 góc là các tính năng. Bấm một tính năng để xổ ra, bấm tiếp để đi sâu."
         actions={<>
           <select className="input" style={{ minWidth: 220 }} value={pid} onChange={(e) => { setPid(e.target.value); setSel(null); }}>
             {(products.data ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.gtin})</option>)}
           </select>
-          <button className="btn" onClick={resetLayout} title="Về bố cục mặc định">Reset layout</button>
+          <button className="btn" onClick={resetLayout} title="Về bố cục mặc định">Đặt lại bố cục</button>
         </>} />
       <div className="ws-wrap">
         {(products.isLoading || wq.isLoading) && <div className="ws-loading"><Spinner label="Đang tải dữ liệu…" /></div>}
@@ -117,7 +117,7 @@ function EditPanel({ sel, model, act, toast, onClose }: { sel: Sel; model: WS; a
   let title = ''; let body: any = null;
 
   if (sel.kind === 'qr') {
-    title = 'QR Code · Sản phẩm';
+    title = 'Mã QR · Sản phẩm';
     body = <>
       {model.qr.dataUrl && <img src={model.qr.dataUrl} alt="QR" style={{ width: 150, height: 150, borderRadius: 12, border: '1px solid var(--border)', margin: '0 auto' }} />}
       <F label="Sản phẩm"><input className="input" value={model.qr.product} readOnly /></F>

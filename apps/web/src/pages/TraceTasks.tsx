@@ -5,7 +5,7 @@ import { Plus, Loader2, Trash2, ClipboardEdit, CalendarClock, Check, Package, Al
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useApiMutation } from '../lib/useApiMutation';
-import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, StatCard, Avatar, Paginator, usePaged, statusClsMap } from '../components/ui';
+import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, Avatar, Paginator, usePaged, statusClsMap } from '../components/ui';
 import { PERMISSIONS, TRACE_TASK_STATUS_LABELS } from '@vlabel/shared';
 import type { TraceTask, Product, Flow, Organization, UserSummary } from '@vlabel/shared';
 
@@ -65,21 +65,30 @@ export default function TraceTasks() {
         <div className="card"><EmptyState title={mine ? 'Bạn chưa có nhiệm vụ nào' : 'Chưa có nhiệm vụ'} hint={isManager ? 'Bấm Tạo nhiệm vụ để giao việc kê khai.' : 'Khi được giao, nhiệm vụ sẽ hiện ở đây.'} /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 anim-in">
-            <StatCard icon={<ListChecks size={16} />} label="Tổng nhiệm vụ" value={list.length} />
-            <StatCard icon={<CalendarClock size={16} />} label="Đang thực hiện" value={activeCount} tone="warn" />
-            <StatCard icon={<CircleCheck size={16} />} label="Hoàn thành" value={doneCount} tone="good" />
-            <StatCard icon={<AlertTriangle size={16} />} label="Quá hạn" value={overdueCount} tone="danger" />
+          {/* Bản kê chỉ số — khối kẻ ô kiểu sổ cái */}
+          <div className="rule rule-strong" style={{ margin: '0 0 0' }} />
+          <div className="kpi grid-cols-2 sm:grid-cols-4 mb-6 anim-in" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+            {[
+              { icon: <ListChecks size={13} />, label: 'Tổng nhiệm vụ', value: list.length, color: 'var(--ink)' },
+              { icon: <CalendarClock size={13} />, label: 'Đang thực hiện', value: activeCount, color: activeCount ? 'var(--warn)' : 'var(--ink)' },
+              { icon: <CircleCheck size={13} />, label: 'Hoàn thành', value: doneCount, color: 'var(--ink)' },
+              { icon: <AlertTriangle size={13} />, label: 'Quá hạn', value: overdueCount, color: overdueCount ? 'var(--danger)' : 'var(--ink)' },
+            ].map((k) => (
+              <div key={k.label}>
+                <div className="k">{k.icon}{k.label}</div>
+                <div className="v" style={{ color: k.color }}>{k.value}</div>
+              </div>
+            ))}
           </div>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col">
             {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy nhiệm vụ phù hợp.</p>}
             {paged.rows.map((t) => {
               const s = STATUS[t.status] ?? STATUS.PENDING;
               const overdue = t.status !== 'DONE' && new Date(t.endDate) < new Date();
               return (
-                <div key={t.id} className="card card-hover p-4 sm:p-5 anim-in"
-                  style={overdue ? { borderColor: 'var(--danger-soft)', boxShadow: 'inset 3px 0 0 var(--danger)' } : undefined}>
+                <div key={t.id} className="py-4 sm:py-5 px-1 sm:px-2 anim-in"
+                  style={overdue ? { borderBottom: '1px solid var(--hairline)', boxShadow: 'inset 3px 0 0 var(--danger)' } : { borderBottom: '1px solid var(--hairline)' }}>
                   <div className="flex items-start gap-3.5 flex-wrap">
                     <span className="w-11 h-11 rounded-2xl grid place-items-center flex-none"
                       style={overdue ? { background: 'var(--danger-soft)', color: 'var(--danger)' } : { background: 'var(--accent-soft)', color: 'var(--accent)' }}>
@@ -102,7 +111,7 @@ export default function TraceTasks() {
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5 text-xs text-[var(--muted)]">
                         <span className="inline-flex items-center gap-1.5">
                           <CalendarClock size={13} className="flex-none" style={overdue ? { color: 'var(--danger)' } : undefined} />
-                          <span style={overdue ? { color: 'var(--danger)', fontWeight: 600 } : undefined}>
+                          <span className="num" style={overdue ? { color: 'var(--danger)', fontWeight: 600 } : undefined}>
                             {new Date(t.startDate).toLocaleDateString('vi-VN')} <ArrowRight size={11} className="inline align-middle" /> {new Date(t.endDate).toLocaleDateString('vi-VN')}
                           </span>
                         </span>
@@ -164,9 +173,9 @@ function CreateTask({ onClose }: { onClose: () => void }) {
           {(products.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.gtin})</option>)}
         </select></label>
       <label className="block mb-3"><span className="label">Lô (tuỳ chọn)</span><input className="input mono" value={f.lot} onChange={(e) => setF({ ...f, lot: e.target.value })} placeholder="LOT-2407-..." /></label>
-      <label className="block mb-3"><span className="label">Flow (tuỳ chọn)</span>
+      <label className="block mb-3"><span className="label">Luồng (tuỳ chọn)</span>
         <select className="input" value={f.flowId} onChange={(e) => setF({ ...f, flowId: e.target.value })}>
-          <option value="">— theo flow của sản phẩm —</option>
+          <option value="">— theo Luồng của sản phẩm —</option>
           {(flows.data ?? []).map((fl) => <option key={fl.id} value={fl.id}>{fl.name}</option>)}
         </select></label>
       <label className="block mb-3"><span className="label">Tổ chức (tuỳ chọn)</span>

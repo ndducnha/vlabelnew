@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, RefreshControl, Image, TextInput } from 'react-native';
+import { View, Text, RefreshControl, TextInput } from 'react-native';
 import { Icon } from '../../components/icons';
 import { useQuery } from '@tanstack/react-query';
-import { Screen, Title, Card, Loading, Empty, Pill, ProgressBar, SegTabs } from '../../components/ui';
+import { Screen, Title, Card, Loading, Empty, Pill, ProgressBar, SegTabs, LedgerRow } from '../../components/ui';
 import { useProducts, useTraceTasks } from '../../lib/queries';
 import type { TraceTask } from '@vlabel/shared';
-import { api, fileUrl } from '../../lib/api';
+import { api } from '../../lib/api';
 import { useTheme, font } from '../../theme';
 import { isOverdue } from '../../lib/format';
 
@@ -50,28 +50,29 @@ export default function ManageScreen({ navigation }: any) {
       </View>
 
       {products.isLoading ? <Loading /> : rows.length === 0 ? <Empty title="Không có sản phẩm" /> : (
-        <View style={{ gap: 10 }}>
-          {rows.map((r) => {
+        <Card style={{ paddingVertical: 4 }}>
+          {rows.map((r, i) => {
             const [tone, label] = STATUS[r.status];
             return (
-              <Card key={r.id} onPress={() => navigation.navigate('ProductDetail', { productId: r.id, name: r.name, gtin: r.gtin })}>
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  {r.image ? <Image source={{ uri: fileUrl(r.image) }} style={{ width: 46, height: 46, borderRadius: 12 }} /> : <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' }}><Icon name="cube-outline" size={22} color={t.accent} /></View>}
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Text style={{ flex: 1, color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }} numberOfLines={1}>{r.name}</Text><Pill label={label} tone={tone} /></View>
-                    <Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 3 }}>{r.gtin}</Text>
-                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                      <Pill label={`${r.flowCount} flow`} /><Pill label={`${r.batchCount} lô`} /><Pill label={`${r.taskCount} lịch`} />
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                      <View style={{ flex: 1 }}><ProgressBar value={r.pct} /></View><Text style={{ color: t.muted, fontFamily: font.monoMed, fontSize: 11.5 }}>{r.pct}%</Text>
-                    </View>
-                  </View>
-                </View>
-              </Card>
+              <LedgerRow
+                key={r.id}
+                index={i + 1}
+                last={i === rows.length - 1}
+                title={r.name}
+                subtitle={r.gtin ? <Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{r.gtin}</Text> : undefined}
+                meta={<><Pill label={`${r.flowCount} luồng`} /><Pill label={`${r.batchCount} lô`} /><Pill label={`${r.taskCount} lịch`} /></>}
+                right={
+                  <>
+                    <Pill label={label} tone={tone} />
+                    <View style={{ width: 66, marginTop: 4 }}><ProgressBar value={r.pct} /></View>
+                    <Text style={{ color: t.muted, fontFamily: font.monoMed, fontSize: 11.5 }}>{r.pct}%</Text>
+                  </>
+                }
+                onPress={() => navigation.navigate('ProductDetail', { productId: r.id, name: r.name, gtin: r.gtin })}
+              />
             );
           })}
-        </View>
+        </Card>
       )}
     </Screen>
   );

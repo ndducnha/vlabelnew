@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, RefreshControl } from 'react-native';
-import { Screen, Title, Card, Empty, Loading, Pill, Button, IconBadge } from '../../components/ui';
+import { Screen, Title, Card, Empty, Loading, Pill, Button, IconBadge, LedgerRow } from '../../components/ui';
 import { useTraceTasks } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { useTheme, font } from '../../theme';
@@ -30,18 +30,22 @@ export default function NotificationsScreen() {
       <Title eyebrow="Nhắc việc" sub="Nhắc việc theo lịch truy xuất. Bật push để nhận thông báo khi có mạng.">Thông báo</Title>
       <Button title="Bật thông báo đẩy" variant="default" icon="notifications-outline" onPress={async () => { const tok = await registerForPush(); toast(tok ? 'Đã đăng ký nhận thông báo' : 'Không lấy được quyền thông báo', !!tok); }} style={{ marginBottom: 16 }} />
       {tasks.isLoading ? <Loading /> : items.length === 0 ? <Empty title="Không có thông báo" hint="Bạn đã xử lý hết nhiệm vụ." icon="notifications-off-outline" /> : (
-        <View style={{ gap: 10 }}>
-          {items.map((n) => (
-            <Card key={n.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <IconBadge name={n.icon} tone={n.tone} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14 }}>{n.title}</Text>
-                <Text style={{ color: t.muted, fontFamily: font.body, fontSize: 12.5, marginTop: 2 }}>{n.sub}</Text>
-              </View>
-              <Pill label={n.tone === 'danger' ? 'Quá hạn' : n.tone === 'warn' ? 'Sắp hạn' : 'Mới'} tone={n.tone} />
-            </Card>
+        <Card style={{ paddingVertical: 0 }}>
+          {items.map((n, i) => (
+            <LedgerRow
+              key={n.id}
+              last={i === items.length - 1}
+              title={(
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <IconBadge name={n.icon} tone={n.tone} size={30} />
+                  <Text numberOfLines={1} style={{ flex: 1, color: t.ink, fontFamily: font.semibold, fontSize: 15 }}>{n.title}</Text>
+                </View>
+              )}
+              subtitle={<Text numberOfLines={1} style={{ color: t.muted, fontFamily: font.mono, fontSize: 12, marginTop: 3 }}>{n.sub}</Text>}
+              right={<Pill label={n.tone === 'danger' ? 'Quá hạn' : n.tone === 'warn' ? 'Sắp hạn' : 'Mới'} tone={n.tone} />}
+            />
           ))}
-        </View>
+        </Card>
       )}
     </Screen>
   );

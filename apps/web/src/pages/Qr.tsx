@@ -32,7 +32,7 @@ export default function Qr() {
     invalidate: [['qr']],
   });
   const imp = useApiMutation(() => api.post('/qr/import-csv', { csv }), {
-    successMessage: (r) => `Đã import ${r.data.generated} mã (${r.data.skipped} dòng lỗi)`,
+    successMessage: (r) => `Đã nhập ${r.data.generated} mã (${r.data.skipped} dòng lỗi)`,
     invalidate: [['qr']],
     onSuccess: () => setCsv(''),
   });
@@ -65,9 +65,9 @@ export default function Qr() {
                 {gen.isPending ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}Sinh QR
               </button>
               <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
-                <span className="label">Import hàng loạt từ CSV <span className="text-[var(--faint)] font-normal">(gtin,lot,serial,quantity)</span></span>
+                <span className="label">Nhập hàng loạt từ CSV <span className="text-[var(--faint)] font-normal">(gtin,lot,serial,quantity)</span></span>
                 <textarea className="input mono min-h-[64px]" placeholder="8938505970011,LOT-A,,100&#10;8935001234562,LOT-B,,50" value={csv} onChange={(e) => setCsv(e.target.value)} />
-                <button className="btn mt-2" disabled={!csv.trim() || imp.isPending} onClick={() => imp.mutate()}>{imp.isPending ? <Loader2 size={15} className="animate-spin" /> : null}Import CSV</button>
+                <button className="btn mt-2" disabled={!csv.trim() || imp.isPending} onClick={() => imp.mutate()}>{imp.isPending ? <Loader2 size={15} className="animate-spin" /> : null}Nhập CSV</button>
               </div>
             </div>
           )}
@@ -117,7 +117,7 @@ export default function Qr() {
       </div>
       <Drawer open={!!assignQr} onClose={() => setAssignQr(null)}
         title={assignQr && <><b>Gán QR cho lô</b><div className="text-xs text-[var(--muted)] mono">{assignQr.gtin} {assignQr.lot ?? ''}</div></>}>
-        <p className="text-sm text-[var(--muted)] mb-3">Chọn lô (traceable item) để gán mã QR này.</p>
+        <p className="text-sm text-[var(--muted)] mb-3">Chọn lô (đối tượng truy xuất) để gán mã QR này.</p>
         {items.isLoading ? <Spinner /> : (
           <div className="flex flex-col gap-2">
             {(items.data ?? []).map((it: any) => (

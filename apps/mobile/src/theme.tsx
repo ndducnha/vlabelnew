@@ -42,15 +42,15 @@ export const font = {
   monoBold: 'JetBrainsMono_700Bold',
 };
 
-// Bo góc & shadow đồng nhất (thang elevation).
-export const radius = { sm: 10, md: 14, lg: 20, xl: 24, pill: 999 };
+// Bo góc kiểu tài liệu (crisp, gần vuông) & shadow phẳng tối giản — chất "sổ cái/chứng thư".
+export const radius = { sm: 5, md: 7, lg: 9, xl: 12, pill: 999 };
 
 export function shadow(t: Theme, level: 0 | 1 | 2 | 3 = 1): ViewStyle {
   if (level === 0) return {};
   const map = {
-    1: { r: 8, y: 3, o: t.dark ? 0.35 : 0.06, e: 2 },
-    2: { r: 16, y: 6, o: t.dark ? 0.45 : 0.09, e: 5 },
-    3: { r: 26, y: 12, o: t.dark ? 0.55 : 0.13, e: 10 },
+    1: { r: 6, y: 2, o: t.dark ? 0.35 : 0.05, e: 1 },
+    2: { r: 12, y: 5, o: t.dark ? 0.45 : 0.07, e: 3 },
+    3: { r: 24, y: 12, o: t.dark ? 0.55 : 0.12, e: 9 },
   }[level];
   return Platform.select({
     ios: { shadowColor: t.shadowColor, shadowOpacity: map.o, shadowRadius: map.r, shadowOffset: { width: 0, height: map.y } },

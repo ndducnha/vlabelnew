@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect } from 'react';
 import { View, Text, RefreshControl } from 'react-native';
-import { Screen, Title, StatCard, Card, Loading, ProgressBar } from '../../components/ui';
+import { Screen, Title, StatCard, Card, Loading, ProgressBar, SectionHeader, Eyebrow, LedgerRow, Pill } from '../../components/ui';
 import { useProducts, useFlowsAll, useTraceTasks } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
 import { useTheme, font } from '../../theme';
@@ -40,26 +40,52 @@ export default function DashboardScreen({ navigation }: any) {
       <Title eyebrow="Bảng điều hành" sub={`Xin chào, ${user?.fullName ?? ''}`}>Tổng quan</Title>
       {loading ? <Loading /> : (
         <>
+          <SectionHeader title="Sản phẩm & Luồng" action="Quản lý" onAction={() => navigation.navigate('Manage')} />
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <StatCard label="Tổng sản phẩm" value={s.products} onPress={() => navigation.navigate('Manage')} />
-            <StatCard label="Chưa có Flow" value={s.noFlow} tone={s.noFlow ? 'warn' : 'good'} onPress={() => navigation.navigate('Manage')} />
+            <StatCard label="Chưa có Luồng" value={s.noFlow} tone={s.noFlow ? 'warn' : 'good'} onPress={() => navigation.navigate('Manage')} />
           </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-            <StatCard label="Flow hoạt động" value={s.activeFlows} tone="accent" />
-            <StatCard label="Lịch hôm nay" value={s.todaySched} tone="warn" onPress={() => navigation.navigate('Manage')} />
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-            <StatCard label="Event chưa xong" value={s.openEvents} tone="accent" />
-            <StatCard label="Event quá hạn" value={s.overdue} tone={s.overdue ? 'danger' : 'good'} />
-          </View>
-          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-            <StatCard label="Nhân sự phân công" value={s.assignees} tone="accent" />
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 18 }}>
+            <StatCard label="Luồng hoạt động" value={s.activeFlows} tone="accent" />
             <StatCard label="Tỷ lệ hoàn thành" value={`${s.completion}%`} tone="good" />
           </View>
-          <Card>
+
+          <SectionHeader title="Công việc truy xuất" />
+          <Card elevated={false} style={{ paddingVertical: 2, marginBottom: 18 }}>
+            <LedgerRow
+              index={1}
+              title="Sự kiện chưa xong"
+              subtitle="Tổng số việc đang mở"
+              right={<Text style={{ color: t.accent, fontFamily: font.monoBold, fontSize: 18 }}>{s.openEvents}</Text>}
+            />
+            <LedgerRow
+              index={2}
+              title="Sự kiện quá hạn"
+              subtitle="Đã trễ so với hạn kết thúc"
+              right={<Text style={{ color: s.overdue ? t.danger : t.good, fontFamily: font.monoBold, fontSize: 18 }}>{s.overdue}</Text>}
+              meta={s.overdue ? <Pill label="Cần xử lý" tone="danger" /> : <Pill label="Đúng hạn" tone="good" />}
+            />
+            <LedgerRow
+              index={3}
+              title="Lịch hôm nay"
+              subtitle="Việc đến hạn trong hôm nay"
+              onPress={() => navigation.navigate('Manage')}
+              right={<Text style={{ color: t.warn, fontFamily: font.monoBold, fontSize: 18 }}>{s.todaySched}</Text>}
+            />
+            <LedgerRow
+              index={4}
+              title="Nhân sự phân công"
+              subtitle="Số người đang nhận việc mở"
+              last
+              right={<Text style={{ color: t.ink, fontFamily: font.monoBold, fontSize: 18 }}>{s.assignees}</Text>}
+            />
+          </Card>
+
+          <SectionHeader title="Tiến độ" />
+          <Card elevated={false}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14 }}>Tỷ lệ hoàn thành lịch truy xuất</Text>
-              <Text style={{ color: t.accent, fontFamily: font.serifBold, fontSize: 18 }}>{s.completion}%</Text>
+              <Eyebrow tone="good">Hoàn thành lịch truy xuất</Eyebrow>
+              <Text style={{ color: t.accent, fontFamily: font.monoBold, fontSize: 18 }}>{s.completion}%</Text>
             </View>
             <ProgressBar value={s.completion} />
           </Card>

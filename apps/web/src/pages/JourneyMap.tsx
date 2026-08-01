@@ -98,7 +98,7 @@ export default function JourneyMap() {
 
   return (
     <>
-      <PageHead title="Hành trình truy xuất" subtitle="Trực quan hóa đường đi của sản phẩm theo Event trong Flow"
+      <PageHead title="Hành trình truy xuất" subtitle="Trực quan hóa đường đi của sản phẩm theo Sự kiện trong Luồng"
         actions={<>
           <button className="btn" onClick={() => setManageLoc(true)}><Building2 size={15} />Địa điểm</button>
           <button className="btn" onClick={() => window.print()}><Printer size={15} />Xuất PDF</button>
@@ -121,9 +121,9 @@ export default function JourneyMap() {
             {lots.map((l: any) => <option key={l} value={l}>{l}</option>)}
           </select>
         </label>
-        <label className="block"><span className="label">Flow</span>
+        <label className="block"><span className="label">Luồng</span>
           <select className="input" style={{ minWidth: 170 }} value={flowId} onChange={(e) => setFlowId(e.target.value)}>
-            <option value="all">Tất cả Flow</option>
+            <option value="all">Tất cả Luồng</option>
             {productFlows.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select>
         </label>
@@ -134,7 +134,7 @@ export default function JourneyMap() {
         <StatCard icon={<Ruler size={16} />} label="Tổng quãng đường" value={`${totalKm.toFixed(1)} km`} />
         <StatCard icon={<MapPin size={16} />} label="Điểm đã qua" value={gpsStops.length} tone="accent" />
         <StatCard icon={<Clock size={16} />} label="Thời gian" value={fmtDur(totalMs)} />
-        <StatCard icon={<ListChecks size={16} />} label="Công đoạn" value={`${doneCount}/${flowEvents.length}`} tone={flowDone ? 'good' : 'warn'} />
+        <StatCard icon={<ListChecks size={16} />} label="Sự kiện" value={`${doneCount}/${flowEvents.length}`} tone={flowDone ? 'good' : 'warn'} />
         <StatCard icon={<Navigation size={16} />} label="Điểm hiện tại" value={stops[current]?.event ?? '—'} tone="accent" />
         <StatCard icon={<Milestone size={16} />} label="Tiếp theo" value={nextEvent} tone={flowDone ? 'good' : 'warn'} />
       </div>
@@ -142,13 +142,13 @@ export default function JourneyMap() {
       {/* Tabs */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <div className="tabbar" style={{ maxWidth: 360 }}>
-          {([['map', 'Bản đồ', MapIcon], ['enterprise', 'Sơ đồ DN', RouteIcon], ['timeline', 'Timeline', ListChecks]] as const).map(([k, l, Icon]) => (
+          {([['map', 'Bản đồ', MapIcon], ['enterprise', 'Sơ đồ DN', RouteIcon], ['timeline', 'Dòng thời gian', ListChecks]] as const).map(([k, l, Icon]) => (
             <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}><Icon size={14} />{l}</button>
           ))}
         </div>
         {tab !== 'timeline' && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            {([['path', 'Đường đi'], ['markers', 'Marker'], ['distance', 'Khoảng cách'], ['info', 'Thông tin']] as const).map(([k, l]) => (
+            {([['path', 'Đường đi'], ['markers', 'Điểm mốc'], ['distance', 'Khoảng cách'], ['info', 'Thông tin']] as const).map(([k, l]) => (
               <button key={k} className={`chip ${(show as any)[k] ? 'chip-accent' : ''}`} style={{ cursor: 'pointer' }} onClick={() => setShow((s) => ({ ...s, [k]: !(s as any)[k] }))}>{l}</button>
             ))}
           </div>
@@ -156,7 +156,7 @@ export default function JourneyMap() {
       </div>
 
       {records.isLoading ? <Spinner /> : stops.length === 0 && tab !== 'timeline' ? (
-        <div className="card"><EmptyState title="Chưa có điểm hành trình" hint="Sản phẩm/lô này chưa có Event nào được duyệt kèm địa điểm. Kê khai Event hoặc gán địa điểm doanh nghiệp để hiện trên bản đồ." /></div>
+        <div className="card"><EmptyState title="Chưa có điểm hành trình" hint="Sản phẩm/lô này chưa có Sự kiện nào được duyệt kèm địa điểm. Kê khai Sự kiện hoặc gán địa điểm doanh nghiệp để hiện trên bản đồ." /></div>
       ) : (
         <>
           {tab === 'map' && <RealMap key={productId + lot + flowId} stops={stops} current={current} show={show} />}
@@ -275,7 +275,7 @@ function EnterpriseMap({ stops, current, show }: any) {
 
 // ══════════ Timeline ══════════
 function TimelineView({ timeline, current, onPick }: any) {
-  if (timeline.length === 0) return <div className="card"><EmptyState title="Chưa có công đoạn" hint="Sản phẩm chưa gắn Flow có công đoạn." /></div>;
+  if (timeline.length === 0) return <div className="card"><EmptyState title="Chưa có Sự kiện" hint="Sản phẩm chưa gắn Luồng có Sự kiện." /></div>;
   let doneIdx = -1;
   return (
     <div className="card p-4">
@@ -357,7 +357,7 @@ function LocationManager({ locs, onChange, onClose }: { locs: Loc[]; onChange: (
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-[12.5px] text-[var(--muted)]">Event khớp địa điểm theo <b>tên</b>. Toạ độ dùng cho bản đồ thực; màu/loại dùng cho sơ đồ.</p>
+          <p className="text-[12.5px] text-[var(--muted)]">Sự kiện khớp địa điểm theo <b>tên</b>. Toạ độ dùng cho bản đồ thực; màu/loại dùng cho sơ đồ.</p>
           {locs.length === 0 && <p className="text-sm text-[var(--muted)] py-2">Chưa có địa điểm nào.</p>}
           {locs.map((l) => (
             <div key={l.id} className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{ border: '1px solid var(--border)' }}>

@@ -46,35 +46,86 @@ export default function Users() {
       ) : (
         <div className="flex flex-col gap-3 anim-in">
           {paged.total === 0 && <div className="card"><EmptyState title="Không tìm thấy người dùng phù hợp." hint="Thử tìm theo tên hoặc email khác." /></div>}
-          {paged.rows.map((u: any) => (
-            <div key={u.id} className="card card-hover p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-3 min-w-0 sm:w-[240px] sm:flex-none">
-                <Avatar name={u.fullName} size={40} />
-                <div className="min-w-0">
-                  <div className="font-bold truncate">{u.fullName}</div>
-                  <div className="flex items-center gap-1 text-xs text-[var(--muted)] truncate">
-                    <Mail size={12} className="flex-none" />
-                    <span className="truncate">{u.email}</span>
+
+          {/* Sổ cái cho desktop */}
+          {paged.total > 0 && (
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="ledger text-sm">
+                <thead><tr>
+                  <th style={{ width: 52 }}>Mục</th>
+                  {['Người dùng', 'Vai trò', 'Đơn vị', 'Hành động'].map((h) => <th key={h}>{h}</th>)}
+                </tr></thead>
+                <tbody>
+                  {paged.rows.map((u: any, i: number) => (
+                    <tr key={u.id}>
+                      <td><span className="ledger-idx">{String((paged.page - 1) * 10 + i + 1).padStart(2, '0')}</span></td>
+                      <td>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar name={u.fullName} size={34} />
+                          <div className="min-w-0">
+                            <b className="block truncate">{u.fullName}</b>
+                            <div className="text-xs text-[var(--muted)] mono truncate">{u.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          {u.roles.length === 0
+                            ? <span className="pill pill-neutral">Chưa gán vai trò</span>
+                            : u.roles.map((r: any) => <span key={r.role.key} className="chip chip-accent">{r.role.name}</span>)}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] min-w-0">
+                          <Building2 size={14} className="flex-none text-[var(--faint)]" />
+                          <span className="truncate">{u.organization?.name ?? 'Chưa gán đơn vị'}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <button className="btn btn-sm" onClick={() => setFlowUser(u)}>
+                          <GitBranch size={13} />Phân quyền
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Card cho mobile */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {paged.rows.map((u: any) => (
+              <div key={u.id} className="card card-hover p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-3 min-w-0 sm:w-[240px] sm:flex-none">
+                  <Avatar name={u.fullName} size={40} />
+                  <div className="min-w-0">
+                    <div className="font-bold truncate">{u.fullName}</div>
+                    <div className="flex items-center gap-1 text-xs text-[var(--muted)] truncate">
+                      <Mail size={12} className="flex-none" />
+                      <span className="truncate">{u.email}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
-                {u.roles.length === 0
-                  ? <span className="pill pill-neutral">Chưa gán vai trò</span>
-                  : u.roles.map((r: any) => <span key={r.role.key} className="chip chip-accent">{r.role.name}</span>)}
-              </div>
+                <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                  {u.roles.length === 0
+                    ? <span className="pill pill-neutral">Chưa gán vai trò</span>
+                    : u.roles.map((r: any) => <span key={r.role.key} className="chip chip-accent">{r.role.name}</span>)}
+                </div>
 
-              <div className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] sm:w-[170px] sm:flex-none min-w-0">
-                <Building2 size={14} className="flex-none text-[var(--faint)]" />
-                <span className="truncate">{u.organization?.name ?? 'Chưa gán đơn vị'}</span>
-              </div>
+                <div className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] sm:w-[170px] sm:flex-none min-w-0">
+                  <Building2 size={14} className="flex-none text-[var(--faint)]" />
+                  <span className="truncate">{u.organization?.name ?? 'Chưa gán đơn vị'}</span>
+                </div>
 
-              <button className="btn btn-sm sm:flex-none w-full sm:w-auto justify-center" onClick={() => setFlowUser(u)}>
-                <GitBranch size={13} />Phân quyền
-              </button>
-            </div>
-          ))}
+                <button className="btn btn-sm sm:flex-none w-full sm:w-auto justify-center" onClick={() => setFlowUser(u)}>
+                  <GitBranch size={13} />Phân quyền
+                </button>
+              </div>
+            ))}
+          </div>
+
           <Paginator page={paged.page} pageSize={10} total={paged.total} onPage={setPage} />
         </div>
       )}
@@ -131,14 +182,14 @@ function UserFlows({ user, onClose }: { user: any; onClose: () => void }) {
       title={<div className="flex items-center gap-2.5">
         <Avatar name={user.fullName} size={30} />
         <div className="min-w-0">
-          <b className="block leading-tight">Phân quyền Flow</b>
+          <b className="block leading-tight">Phân quyền Luồng</b>
           <div className="text-xs text-[var(--muted)] truncate">{user.fullName}</div>
         </div>
       </div>}>
-      <p className="text-sm text-[var(--muted)] mb-3.5">Chọn Flow mà người này được phép khai báo.</p>
+      <p className="text-sm text-[var(--muted)] mb-3.5">Chọn Luồng mà người này được phép khai báo.</p>
       <div className="flex items-center gap-2 rounded-full px-3.5 py-2.5 mb-4" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
         <Search size={15} className="text-[var(--muted)]" />
-        <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm flow…" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm luồng…" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
       {flows.isLoading ? <Spinner /> : (
         <div className="flex flex-col gap-2">
@@ -156,7 +207,7 @@ function UserFlows({ user, onClose }: { user: any; onClose: () => void }) {
               </div>
             );
           })}
-          {shown.length === 0 && <EmptyState title="Không có Flow" hint="Không tìm thấy Flow phù hợp." />}
+          {shown.length === 0 && <EmptyState title="Không có Luồng" hint="Không tìm thấy Luồng phù hợp." />}
         </div>
       )}
     </Drawer>

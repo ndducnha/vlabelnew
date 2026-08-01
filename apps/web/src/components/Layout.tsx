@@ -23,7 +23,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/trace-manage', label: 'Quản lý', icon: LayoutList, perm: PERMISSIONS.FLOW_MANAGE },
       { to: '/journey', label: 'Hành trình', icon: RouteIcon, perm: PERMISSIONS.PRODUCT_READ },
-      { to: '/flows', label: 'Flow & Event', icon: GitBranch, perm: PERMISSIONS.FLOW_MANAGE },
+      { to: '/flows', label: 'Luồng & Sự kiện', icon: GitBranch, perm: PERMISSIONS.FLOW_MANAGE },
       { to: '/entry', label: 'Kê khai', icon: ClipboardEdit, perm: PERMISSIONS.EVENT_RECORD_CREATE },
       { to: '/tasks', label: 'Lịch truy xuất', icon: CalendarClock, perm: PERMISSIONS.EVENT_RECORD_CREATE },
     ],
@@ -38,8 +38,8 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   {
     title: 'VLabel',
     items: [
-      { to: '/helper', label: 'VLabel Helper', icon: Sparkles, perm: PERMISSIONS.PRODUCT_UPDATE },
-      { to: '/', label: 'VLabel Workspace', icon: LayoutDashboard, end: true },
+      { to: '/helper', label: 'Trợ lý VLabel', icon: Sparkles, perm: PERMISSIONS.PRODUCT_UPDATE },
+      { to: '/', label: 'Không gian làm việc VLabel', icon: LayoutDashboard, end: true },
     ],
   },
 ];

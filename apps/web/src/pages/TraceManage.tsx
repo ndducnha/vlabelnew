@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Package, GitBranch, Search, CalendarClock, AlertTriangle, ListChecks, ShieldCheck } from '../lib/icons';
 import { api } from '../lib/api';
-import { PageHead, Spinner, EmptyState, StatCard, SegmentedControl, Paginator, usePaged } from '../components/ui';
+import { PageHead, Spinner, EmptyState, SegmentedControl, Paginator, usePaged } from '../components/ui';
 import type { Product, Flow, TraceTask } from '@vlabel/shared';
 import { TableRow, CardRow, ProductDetail } from './TraceManage.parts';
 
@@ -63,7 +63,7 @@ export default function TraceManage() {
 
   return (
     <>
-      <PageHead eyebrow="Truy xuất nguồn gốc" title="Quản lý truy xuất" subtitle="Tổng quan sản phẩm, Flow, phân công và lịch truy xuất"
+      <PageHead eyebrow="Truy xuất nguồn gốc" title="Quản lý truy xuất" subtitle="Tổng quan sản phẩm, Luồng, phân công và lịch truy xuất"
         actions={
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -71,22 +71,30 @@ export default function TraceManage() {
           </div>
         } />
 
-      {/* Dashboard */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
-        <StatCard icon={<Package size={16} />} label="Tổng sản phẩm" value={totalProducts} />
-        <StatCard icon={<GitBranch size={16} />} label="Chưa có Flow" value={noFlow} tone={noFlow ? 'warn' : 'good'} />
-        <StatCard icon={<ShieldCheck size={16} />} label="Flow hoạt động" value={activeFlows} tone="accent" />
-        <StatCard icon={<CalendarClock size={16} />} label="Lịch sắp đến hạn" value={dueSoon} tone="warn" />
-        <StatCard icon={<AlertTriangle size={16} />} label="Lịch quá hạn" value={overdueTasks} tone={overdueTasks ? 'danger' : 'good'} />
-        <StatCard icon={<ListChecks size={16} />} label="Lịch chưa xong" value={openTasks} tone="accent" />
+      {/* Bản kê chỉ số — khối kẻ ô kiểu sổ cái */}
+      <div className="rule rule-strong" style={{ margin: '0 0 0' }} />
+      <div className="kpi grid-cols-2 lg:grid-cols-6 mb-6" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+        {[
+          { icon: <Package size={13} />, label: 'Tổng sản phẩm', value: totalProducts, color: 'var(--ink)' },
+          { icon: <GitBranch size={13} />, label: 'Chưa có Luồng', value: noFlow, color: noFlow ? 'var(--warn)' : 'var(--ink)' },
+          { icon: <ShieldCheck size={13} />, label: 'Luồng hoạt động', value: activeFlows, color: 'var(--ink)' },
+          { icon: <CalendarClock size={13} />, label: 'Sắp đến hạn', value: dueSoon, color: dueSoon ? 'var(--warn)' : 'var(--ink)' },
+          { icon: <AlertTriangle size={13} />, label: 'Quá hạn', value: overdueTasks, color: overdueTasks ? 'var(--danger)' : 'var(--ink)' },
+          { icon: <ListChecks size={13} />, label: 'Lịch chưa xong', value: openTasks, color: 'var(--ink)' },
+        ].map((k) => (
+          <div key={k.label}>
+            <div className="k">{k.icon}{k.label}</div>
+            <div className="v" style={{ color: k.color }}>{k.value}</div>
+          </div>
+        ))}
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        <SegmentedControl value={flowFilter} onChange={(v) => { setFlowFilter(v); setPage(1); }} options={[{ value: 'all', label: 'Tất cả' }, { value: 'has', label: 'Có Flow' }, { value: 'none', label: 'Chưa Flow' }]} />
+        <SegmentedControl value={flowFilter} onChange={(v) => { setFlowFilter(v); setPage(1); }} options={[{ value: 'all', label: 'Tất cả' }, { value: 'has', label: 'Có Luồng' }, { value: 'none', label: 'Chưa Luồng' }]} />
         <select className="input" style={{ width: 180 }} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="all">Mọi trạng thái</option>
-          <option value="noflow">Chưa có Flow</option>
+          <option value="noflow">Chưa có Luồng</option>
           <option value="ready">Sẵn sàng</option>
           <option value="active">Đang khai báo</option>
           <option value="overdue">Có lịch quá hạn</option>
@@ -98,14 +106,15 @@ export default function TraceManage() {
         <div className="card"><EmptyState title="Không có sản phẩm" hint="Thử bỏ bớt bộ lọc hoặc tạo sản phẩm ở Quản lý sản phẩm." /></div>
       ) : (
         <>
-          {/* Bảng cho desktop */}
-          <div className="card overflow-hidden p-0 hidden lg:block anim-in">
-            <table className="w-full text-sm">
-              <thead><tr className="text-left text-[var(--muted)]" style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Sản phẩm', 'Flow', 'Lô', 'Lịch', 'Tiến độ', 'Trạng thái'].map((h) => <th key={h} className="px-5 py-3 text-[12px] font-semibold uppercase tracking-wide">{h}</th>)}
+          {/* Sổ cái cho desktop */}
+          <div className="hidden lg:block anim-in overflow-x-auto">
+            <table className="ledger text-sm">
+              <thead><tr>
+                <th style={{ width: 52 }}>Mục</th>
+                {['Sản phẩm', 'Luồng', 'Lô', 'Lịch', 'Tiến độ', 'Trạng thái'].map((h) => <th key={h}>{h}</th>)}
               </tr></thead>
-              <tbody className="rows">
-                {paged.rows.map((r: any) => <TableRow key={r.id} r={r} onOpen={() => setDetail(r)} />)}
+              <tbody>
+                {paged.rows.map((r: any, i: number) => <TableRow key={r.id} r={r} index={(paged.page - 1) * 10 + i + 1} onOpen={() => setDetail(r)} />)}
               </tbody>
             </table>
           </div>

@@ -7,7 +7,7 @@ import { api, apiError } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { PageHead, Spinner, ProgressBar } from '../components/ui';
 
-const STEPS = ['Chọn GTIN', 'Xem trước', 'Đơn vị', 'Flow', 'Xác nhận'];
+const STEPS = ['Chọn GTIN', 'Xem trước', 'Đơn vị', 'Luồng', 'Xác nhận'];
 
 export default function ProductWizard() {
   const nav = useNavigate();
@@ -154,9 +154,9 @@ export default function ProductWizard() {
               <div className="anim-in">
                 <div className="flex items-center gap-2.5 mb-1">
                   <span className="iconbox"><GitBranch size={18} /></span>
-                  <h3 className="font-bold text-[15px]">Gán Flow truy xuất</h3>
+                  <h3 className="font-bold text-[15px]">Gán Luồng truy xuất</h3>
                 </div>
-                <p className="text-sm text-[var(--muted)] mb-5">Mỗi sản phẩm chỉ một Flow. Khi kê khai sẽ đi theo Flow này (có thể gán sau ở Quản lý sản phẩm).</p>
+                <p className="text-sm text-[var(--muted)] mb-5">Mỗi sản phẩm chỉ một Luồng. Khi kê khai sẽ đi theo Luồng này (có thể gán sau ở Quản lý sản phẩm).</p>
                 <div className="grid gap-2.5">
                   {(flows.data ?? []).map((f) => (
                     <button key={f.id} onClick={() => setFlowId(flowId === f.id ? '' : f.id)} className={`opt ${flowId === f.id ? 'sel' : ''}`}>
@@ -167,7 +167,7 @@ export default function ProductWizard() {
                       {flowId === f.id && <Check size={17} className="text-[var(--accent)] flex-none" />}
                     </button>
                   ))}
-                  {(flows.data ?? []).length === 0 && <p className="text-sm text-[var(--muted)]">Chưa có Flow nào. Có thể bỏ qua và gán sau.</p>}
+                  {(flows.data ?? []).length === 0 && <p className="text-sm text-[var(--muted)]">Chưa có Luồng nào. Có thể bỏ qua và gán sau.</p>}
                 </div>
               </div>
             )}
@@ -183,7 +183,7 @@ export default function ProductWizard() {
                 <div className="grid grid-cols-2 gap-3 p-4 rounded-[14px] max-w-[480px] mx-auto mt-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   {[['Tên', name], ['GTIN', picked?.gtin], ['Nguồn', 'VNPC'],
                     ['Đơn vị', (orgs.data ?? []).find((o) => o.id === organizationId)?.name ?? '·'],
-                    ['Flow', (flows.data ?? []).find((f) => f.id === flowId)?.name ?? 'Chưa gán']].map(([k, v]) => (
+                    ['Luồng', (flows.data ?? []).find((f) => f.id === flowId)?.name ?? 'Chưa gán']].map(([k, v]) => (
                     <div key={k as string}><div className="text-[11.5px] text-[var(--muted)] mb-0.5">{k}</div><b className="text-sm">{v}</b></div>
                   ))}
                 </div>

@@ -54,6 +54,17 @@ function ListView({ canEdit, onNew, onEdit }: any) {
   const rows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
   const PUBLIC_BASE = window.location.origin;
 
+  const actions = (r: any) => (
+    <>
+      <a className="btn btn-sm" href={`${PUBLIC_BASE}/t/${r.product?.gtin}${r.batchCode ? `?lot=${r.batchCode}` : ''}`} target="_blank" rel="noreferrer" title="Xem thử trang QR"><ExternalLink size={13} /></a>
+      {canEdit && <button className="btn btn-sm" onClick={() => onEdit(r)}><Pencil size={13} />Sửa</button>}
+      {canEdit && <button className="btn btn-sm" onClick={() => clone.mutate(r.id)}><Copy size={13} /></button>}
+      {canEdit && r.status !== 'published' && <button className="btn btn-sm btn-primary" onClick={() => setSt.mutate({ id: r.id, s: 'published' })}><Send size={13} />Xuất bản</button>}
+      {canEdit && r.status === 'published' && <button className="btn btn-sm" onClick={() => setSt.mutate({ id: r.id, s: 'archived' })}><Archive size={13} />Ngừng</button>}
+      {canEdit && <button className="btn btn-sm btn-danger" onClick={() => { if (window.confirm('Xóa nhãn phụ?')) del.mutate(r.id); }}><Trash2 size={13} /></button>}
+    </>
+  );
+
   return (
     <>
       <PageHead eyebrow="Nhãn hàng hóa" title="Nhãn phụ" subtitle="Nhãn bổ sung (thường tiếng Việt) gắn theo sản phẩm/lô, hiển thị trên cùng mã QR"
@@ -74,36 +85,69 @@ function ListView({ canEdit, onNew, onEdit }: any) {
       {list.isLoading ? <Spinner /> : total === 0 ? (
         <div className="card"><EmptyState title={q ? 'Không tìm thấy' : 'Chưa có nhãn phụ'} hint={canEdit ? 'Bấm Tạo nhãn phụ để soạn nội dung bổ sung cho sản phẩm.' : 'Chưa có nhãn phụ nào.'} action={canEdit ? <button className="btn btn-primary" onClick={onNew}><Plus size={15} />Tạo nhãn phụ</button> : undefined} /></div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {rows.map((r: any) => {
-            const s = STATUS[r.status] ?? STATUS.draft;
-            return (
-              <div key={r.id} className="card card-hover p-4 anim-in">
-                <div className="flex items-start gap-3 flex-wrap">
-                  <span className="iconbox flex-none"><Package size={18} /></span>
-                  <div className="flex-1 min-w-[180px]">
-                    <div className="flex items-center gap-2 flex-wrap"><b className="text-[15px]">{r.name}</b><span className={`pill ${s.cls}`}><i />{s.label}</span></div>
-                    <div className="text-xs text-[var(--muted)] mt-1">{r.product?.name} · <span className="mono">{r.product?.gtin}</span></div>
-                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                      <span className="chip">{SCOPE[r.scope] ?? r.scope}</span>
-                      {r.batchCode && <span className="chip mono">Lô {r.batchCode}</span>}
-                      <span className="chip">v{r.version}</span>
+        <>
+          {/* Sổ cái cho desktop */}
+          <div className="hidden lg:block anim-in overflow-x-auto">
+            <table className="ledger text-sm">
+              <thead><tr>
+                <th style={{ width: 52 }}>Mục</th>
+                <th>Nhãn phụ</th>
+                <th>Phạm vi</th>
+                <th>Trạng thái</th>
+                <th style={{ textAlign: 'right' }}>Hành động</th>
+              </tr></thead>
+              <tbody>
+                {rows.map((r: any, i: number) => {
+                  const s = STATUS[r.status] ?? STATUS.draft;
+                  return (
+                    <tr key={r.id}>
+                      <td><span className="ledger-idx">{String((safePage - 1) * pageSize + i + 1).padStart(2, '0')}</span></td>
+                      <td>
+                        <div className="flex items-center gap-3">
+                          <span className="iconbox flex-none"><Package size={18} /></span>
+                          <div className="min-w-0"><b className="block truncate text-[15px]">{r.name}</b><div className="text-xs text-[var(--muted)]">{r.product?.name} · <span className="mono">{r.product?.gtin}</span></div></div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="chip">{SCOPE[r.scope] ?? r.scope}</span>
+                          {r.batchCode && <span className="chip mono">Lô {r.batchCode}</span>}
+                          <span className="chip num">v{r.version}</span>
+                        </div>
+                      </td>
+                      <td><span className={`pill ${s.cls}`}><i />{s.label}</span></td>
+                      <td><div className="flex gap-1.5 flex-wrap justify-end">{actions(r)}</div></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {/* Card cho mobile */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {rows.map((r: any) => {
+              const s = STATUS[r.status] ?? STATUS.draft;
+              return (
+                <div key={r.id} className="card card-hover p-4 anim-in">
+                  <div className="flex items-start gap-3 flex-wrap">
+                    <span className="iconbox flex-none"><Package size={18} /></span>
+                    <div className="flex-1 min-w-[180px]">
+                      <div className="flex items-center gap-2 flex-wrap"><b className="text-[15px]">{r.name}</b><span className={`pill ${s.cls}`}><i />{s.label}</span></div>
+                      <div className="text-xs text-[var(--muted)] mt-1">{r.product?.name} · <span className="mono">{r.product?.gtin}</span></div>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                        <span className="chip">{SCOPE[r.scope] ?? r.scope}</span>
+                        {r.batchCode && <span className="chip mono">Lô {r.batchCode}</span>}
+                        <span className="chip num">v{r.version}</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap justify-end">
-                    <a className="btn btn-sm" href={`${PUBLIC_BASE}/t/${r.product?.gtin}${r.batchCode ? `?lot=${r.batchCode}` : ''}`} target="_blank" rel="noreferrer" title="Xem thử trang QR"><ExternalLink size={13} /></a>
-                    {canEdit && <button className="btn btn-sm" onClick={() => onEdit(r)}><Pencil size={13} />Sửa</button>}
-                    {canEdit && <button className="btn btn-sm" onClick={() => clone.mutate(r.id)}><Copy size={13} /></button>}
-                    {canEdit && r.status !== 'published' && <button className="btn btn-sm btn-primary" onClick={() => setSt.mutate({ id: r.id, s: 'published' })}><Send size={13} />Xuất bản</button>}
-                    {canEdit && r.status === 'published' && <button className="btn btn-sm" onClick={() => setSt.mutate({ id: r.id, s: 'archived' })}><Archive size={13} />Ngừng</button>}
-                    {canEdit && <button className="btn btn-sm btn-danger" onClick={() => { if (window.confirm('Xóa nhãn phụ?')) del.mutate(r.id); }}><Trash2 size={13} /></button>}
+                    <div className="flex gap-1.5 flex-wrap justify-end">{actions(r)}</div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
           <Paginator page={safePage} pageSize={pageSize} total={total} onPage={setPage} />
-        </div>
+        </>
       )}
     </>
   );

@@ -125,7 +125,25 @@ export function Pill({ label, tone = 'neutral' }: { label: string; tone?: 'neutr
   const t = useTheme();
   const map: Record<string, [string, string]> = { neutral: [t.surface, t.muted], good: [t.goodSoft, t.good], warn: [t.warnSoft, t.warn], danger: [t.dangerSoft, t.danger], accent: [t.accentSoft, t.accentInk] };
   const [bg, fg] = map[tone];
-  return <View style={{ backgroundColor: bg, borderRadius: radius.pill, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' }}><Text style={{ color: fg, fontFamily: font.monoBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</Text></View>;
+  return <View style={{ backgroundColor: bg, borderRadius: 4, borderWidth: 1, borderColor: t.border, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-start' }}><Text style={{ color: fg, fontFamily: font.monoBold, fontSize: 10, letterSpacing: 0.6, textTransform: 'uppercase' }}>{label}</Text></View>;
+}
+
+// Hàng sổ cái cho màn danh sách: STT mono ở lề + tiêu đề + meta, kẻ hairline (không thẻ nổi).
+export function LedgerRow({ index, title, subtitle, meta, right, onPress, last }: { index?: number; title: React.ReactNode; subtitle?: React.ReactNode; meta?: React.ReactNode; right?: React.ReactNode; onPress?: () => void; last?: boolean }) {
+  const t = useTheme();
+  const body = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: last ? 0 : 1, borderBottomColor: t.hairline }}>
+      {index != null ? <Text style={{ fontFamily: font.mono, fontSize: 12, color: t.faint, width: 22, textAlign: 'right' }}>{String(index).padStart(2, '0')}</Text> : null}
+      <View style={{ flex: 1, minWidth: 0 }}>
+        {typeof title === 'string' ? <Text numberOfLines={1} style={{ color: t.ink, fontFamily: font.semibold, fontSize: 15 }}>{title}</Text> : title}
+        {subtitle != null ? (typeof subtitle === 'string' ? <Text numberOfLines={1} style={{ color: t.muted, fontFamily: font.body, fontSize: 12.5, marginTop: 2 }}>{subtitle}</Text> : subtitle) : null}
+        {meta ? <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 7 }}>{meta}</View> : null}
+      </View>
+      {right ? <View style={{ alignItems: 'flex-end', gap: 4 }}>{right}</View> : null}
+    </View>
+  );
+  if (onPress) return <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.6 } : undefined)}>{body}</Pressable>;
+  return body;
 }
 
 export function ProgressBar({ value }: { value: number }) {
