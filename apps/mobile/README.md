@@ -89,11 +89,12 @@ Mobile **không truy cập DB trực tiếp**, chỉ qua API. Tất cả endpoin
 | Người dùng/Tổ chức | `GET /users/branch`, `GET /organizations` | Phân công, đơn vị |
 | Dashboard | `GET /dashboard/stats` | Tổng quan |
 
-### API nên bổ sung (additive, tương thích ngược — CHƯA thêm để không đụng backend)
+### API đã bổ sung (additive, tương thích ngược)
+- `POST /auth/change-password { currentPassword, newPassword }` — màn Đổi mật khẩu (đã hoạt động thật).
 
-- `POST /auth/change-password { currentPassword, newPassword }` — màn Đổi mật khẩu (hiện báo "chưa hỗ trợ" nếu 404).
-- `POST /auth/forgot-password { email }` — Quên mật khẩu.
-- `POST /devices/register { token, platform }` + service gửi Expo Push — để đẩy: giao việc mới, gần/quá hạn, duyệt/từ chối, yêu cầu bổ sung.
+### API nên bổ sung thêm (khi có hạ tầng tương ứng)
+- `POST /auth/forgot-password { email }` — Quên mật khẩu (cần SMTP gửi email).
+- `POST /devices/register { token, platform }` + service gửi Expo Push — để đẩy: giao việc mới, gần/quá hạn, yêu cầu bổ sung. Client đã đăng ký token sẵn.
 
 > Ứng dụng đã chừa sẵn chỗ gọi các endpoint trên; khi backend bổ sung thì tự hoạt động. **Không** đổi prefix `/api` hiện tại (web đang dùng). Nếu muốn `/api/v1`, thêm dưới dạng **alias song song** để giữ tương thích.
 
@@ -103,13 +104,19 @@ Suy ra từ `GET /auth/me` (`permissions[]`). `flow:manage` ⇒ Manager (tab T�
 ## 5. Sitemap & user flow
 
 - **User**: Trang chủ → Công việc → **Khai báo Event** (wizard: sản phẩm/lô → công đoạn → ai → địa điểm → hoạt động → thông tin → ảnh → xem lại → gửi) · Quét QR · Thông báo · Tài khoản.
-- **Manager**: Tổng quan (bấm số liệu mở danh sách) → Quản lý (sản phẩm → chi tiết: Flow/Phân công/Lịch/Tiến độ/Hành trình) · Helper (wizard Truy xuất/Lịch) · Thông báo · Tài khoản.
+- **Manager**: Tổng quan (bấm số liệu mở danh sách) → Quản lý (sản phẩm → chi tiết: Flow/Phân công/Lịch/Tiến độ/Hành trình) · Helper (wizard Truy xuất · Lịch · **Nhãn điện tử** · **Nhãn phụ**) · Thông báo · Tài khoản.
 
 ## 6. Offline & đồng bộ
 - Khai báo khi mất mạng → lưu vào hàng chờ (`expo-secure-store`), tự **đồng bộ khi mở app/có mạng** (`flushQueue`), xoá khỏi hàng chờ khi thành công ⇒ tránh gửi trùng.
 - Kéo-để-tải-lại trên mọi danh sách; TanStack Query cache dữ liệu đã tải.
 
-## 7. Giới hạn hiện tại (định hướng mở rộng)
-- Chọn vị trí trực tiếp trên bản đồ khi khai báo: đang dùng ô địa điểm dạng chữ (đã chừa `gpsLat/gpsLng`).
-- Soạn nội dung Nhãn điện tử/Nhãn phụ nhiều trường: khuyến nghị dùng bản web (đồng bộ chung dữ liệu).
-- Push thực sự cần endpoint gửi ở backend (đã có đăng ký token phía client).
+## 7. Đã hoàn thiện
+- Auth: đăng nhập, hồ sơ, **đổi mật khẩu (thật)**, đăng xuất, đăng ký push.
+- User: trang chủ, công việc (lọc), **khai báo Event** (wizard + camera + offline queue + tự đồng bộ), quét QR, thông báo.
+- Manager: dashboard (bấm số liệu), quản lý sản phẩm (tìm/lọc/tiến độ), chi tiết (Flow đa-QR, phân công toàn Flow/theo Event, lịch, tiến độ), **Helper 4 wizard** (Truy xuất · Lịch · Nhãn điện tử · Nhãn phụ), **bản đồ hành trình có playback** (bản đồ thực OSM + sơ đồ, lọc lô/Flow).
+
+## 8. Phụ thuộc hạ tầng (ngoài phạm vi app)
+- Quên mật khẩu qua email: cần SMTP + endpoint `forgot-password`.
+- Push đẩy thực: cần service gửi Expo Push ở backend (client đã đăng ký token).
+- Duyệt/từ chối khai báo: backend hiện gộp submit = duyệt (chưa có quy trình duyệt riêng).
+- Chọn vị trí trực tiếp trên bản đồ khi khai báo: hiện nhập địa điểm dạng chữ (đã chừa `gpsLat/gpsLng`).
