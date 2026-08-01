@@ -30,6 +30,13 @@ export class AuthController {
     return this.auth.logout(refreshToken);
   }
 
+  // Đổi mật khẩu (đăng nhập rồi). Bổ sung, tương thích ngược.
+  @Post('change-password')
+  @ApiBearerAuth()
+  changePassword(@CurrentUser() user: AuthUser, @Body() body: { currentPassword: string; newPassword: string }) {
+    return this.auth.changePassword(user.sub, body.currentPassword, body.newPassword);
+  }
+
   @Get('me')
   @ApiBearerAuth()
   me(@CurrentUser() user: AuthUser) {

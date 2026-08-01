@@ -7,6 +7,8 @@ import { WizardShell } from '../../components/WizardShell';
 import { api, apiError } from '../../lib/api';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
+import ElabelWizard from './ElabelWizard';
+import SuppWizard from './SuppWizard';
 
 type Mode = 'trace' | 'elabel' | 'supp' | 'sched';
 
@@ -14,13 +16,8 @@ export default function HelperScreen({ navigation }: any) {
   const t = useTheme();
   const [mode, setMode] = useState<Mode | null>(null);
   if (mode === 'trace' || mode === 'sched') return <TraceWizard scheduleOnly={mode === 'sched'} onClose={() => setMode(null)} />;
-  if (mode === 'elabel' || mode === 'supp') return (
-    <Screen>
-      <Title sub="Soạn nội dung nhãn nhiều trường phù hợp hơn trên web.">{mode === 'elabel' ? 'Nhãn điện tử' : 'Nhãn phụ'}</Title>
-      <Card><AppText>Bạn có thể tạo/sửa nhãn trên bản web VLabel (đồng bộ chung dữ liệu). Trên mobile, hãy dùng luồng Truy xuất và Lịch để phân công & theo dõi.</AppText></Card>
-      <Pressable onPress={() => setMode(null)} style={{ marginTop: 16 }}><Text style={{ color: t.accent, fontWeight: '700', textAlign: 'center' }}>← Quay lại</Text></Pressable>
-    </Screen>
-  );
+  if (mode === 'elabel') return <ElabelWizard onClose={() => setMode(null)} />;
+  if (mode === 'supp') return <SuppWizard onClose={() => setMode(null)} />;
 
   const OPTS: { m: Mode; icon: any; label: string; desc: string }[] = [
     { m: 'trace', icon: 'git-branch-outline', label: 'Tạo Truy xuất nguồn gốc', desc: 'Chọn sản phẩm, Flow, phạm vi và phân công.' },

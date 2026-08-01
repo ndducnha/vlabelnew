@@ -41,6 +41,19 @@ export class AuthService {
     return this.issueTokens(authUser);
   }
 
+  /** Đổi mật khẩu: xác thực mật khẩu hiện tại rồi cập nhật (bổ sung, không ảnh hưởng luồng cũ). */
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId, deletedAt: null } });
+    if (!user || !bcrypt.compareSync(currentPassword, user.passwordHash)) {
+      throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+    }
+    if (!newPassword || newPassword.length < 8) {
+      throw new UnauthorizedException('Mật khẩu mới cần tối thiểu 8 ký tự');
+    }
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash: bcrypt.hashSync(newPassword, 10) } });
+    return { ok: true };
+  }
+
   async refresh(refreshToken: string) {
     let payload: { sub: string; jti: string };
     try {
