@@ -17,6 +17,7 @@ import Supplementary from './pages/Supplementary';
 import Users from './pages/Users';
 import Helper from './pages/Helper';
 import TraceManage from './pages/TraceManage';
+import JourneyMap from './pages/JourneyMap';
 
 function RequireAuth({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/helper" element={<Helper />} />
         <Route path="/trace-manage" element={<TraceManage />} />
+        <Route path="/journey" element={<JourneyMap />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
