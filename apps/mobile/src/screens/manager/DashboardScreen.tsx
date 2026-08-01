@@ -1,35 +1,34 @@
 import React, { useMemo, useEffect } from 'react';
 import { View, Text, RefreshControl } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
 import { Screen, Title, StatCard, Card, Loading, ProgressBar } from '../../components/ui';
-import { api } from '../../lib/api';
+import { useProducts, useFlowsAll, useTraceTasks } from '../../lib/queries';
 import { useAuth } from '../../lib/auth';
-import { useTheme } from '../../theme';
+import { useTheme, font } from '../../theme';
 import { isOverdue, daysTo } from '../../lib/format';
 import { flushQueue } from '../../lib/offline';
 
 export default function DashboardScreen({ navigation }: any) {
   const t = useTheme();
   const { user } = useAuth();
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
-  const tasks = useQuery({ queryKey: ['trace-tasks', 'all'], queryFn: () => api.get('/trace-tasks').then((r) => r.data) });
-  const flows = useQuery({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
+  const products = useProducts();
+  const tasks = useTraceTasks(false);
+  const flows = useFlowsAll();
 
   useEffect(() => { flushQueue().catch(() => {}); }, []);
 
   const s = useMemo(() => {
     const ps = products.data ?? [], ts = tasks.data ?? [], fs = flows.data ?? [];
-    const open = ts.filter((x: any) => x.status !== 'DONE');
-    const done = ts.filter((x: any) => x.status === 'DONE').length;
+    const open = ts.filter((x) => x.status !== 'DONE');
+    const done = ts.filter((x) => x.status === 'DONE').length;
     return {
       products: ps.length,
-      noFlow: ps.filter((p: any) => (p.flows ?? []).length === 0).length,
-      activeFlows: fs.filter((f: any) => (f._count?.products ?? 0) > 0).length,
-      todaySched: open.filter((x: any) => daysTo(x.endDate) <= 0 && !isOverdue(x.endDate, x.status)).length,
+      noFlow: ps.filter((p) => (p.flows ?? []).length === 0).length,
+      activeFlows: fs.filter((f) => (f._count?.products ?? 0) > 0).length,
+      todaySched: open.filter((x) => daysTo(x.endDate) <= 0 && !isOverdue(x.endDate, x.status)).length,
       openEvents: open.length,
-      overdue: open.filter((x: any) => isOverdue(x.endDate, x.status)).length,
+      overdue: open.filter((x) => isOverdue(x.endDate, x.status)).length,
       completion: ts.length ? Math.round((done / ts.length) * 100) : 0,
-      assignees: new Set(open.map((x: any) => x.assignedUser?.id)).size,
+      assignees: new Set(open.map((x) => x.assignedUser?.id)).size,
     };
   }, [products.data, tasks.data, flows.data]);
 
@@ -38,7 +37,7 @@ export default function DashboardScreen({ navigation }: any) {
 
   return (
     <Screen refreshControl={<RefreshControl refreshing={products.isFetching} onRefresh={refetchAll} tintColor={t.accent} />}>
-      <Title sub={`Xin chào, ${user?.fullName ?? ''}`}>Tổng quan</Title>
+      <Title eyebrow="Bảng điều hành" sub={`Xin chào, ${user?.fullName ?? ''}`}>Tổng quan</Title>
       {loading ? <Loading /> : (
         <>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
@@ -58,7 +57,10 @@ export default function DashboardScreen({ navigation }: any) {
             <StatCard label="Tỷ lệ hoàn thành" value={`${s.completion}%`} tone="good" />
           </View>
           <Card>
-            <Text style={{ color: t.ink, fontWeight: '700', marginBottom: 8 }}>Tỷ lệ hoàn thành lịch truy xuất</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14 }}>Tỷ lệ hoàn thành lịch truy xuất</Text>
+              <Text style={{ color: t.accent, fontFamily: font.serifBold, fontSize: 18 }}>{s.completion}%</Text>
+            </View>
             <ProgressBar value={s.completion} />
           </Card>
         </>

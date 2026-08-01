@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ReactFlow, Background, Controls, useNodesState, useEdgesState, ReactFlowProvider, useReactFlow } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { X, Trash2, Plus, ArrowUp, ArrowDown } from 'lucide-react';
+import { X, Trash2, Plus, ArrowUp, ArrowDown } from '../lib/icons';
 import { PageHead, Spinner } from '../components/ui';
 import { useToast } from '../lib/toast';
 import { api, apiError } from '../lib/api';

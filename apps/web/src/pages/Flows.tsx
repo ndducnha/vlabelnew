@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GitBranch, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, Eye, EyeOff, Rocket, User, MapPin, Clock, FileText, Image, Search, Copy, Pencil, Check, Building2, Layers } from 'lucide-react';
+import { GitBranch, ArrowRight, ArrowUp, ArrowDown, Plus, Trash2, Eye, EyeOff, Rocket, User, MapPin, Clock, FileText, Image, Search, Copy, Pencil, Check, Building2, Layers } from '../lib/icons';
 import { api, apiError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
+import { useApiMutation } from '../lib/useApiMutation';
 import { PageHead, Spinner, Drawer, EmptyState, SegmentedControl } from '../components/ui';
 import { PERMISSIONS, FIELD_TYPES, ROLE_LABELS, ASSIGNABLE_ROLES } from '@vlabel/shared';
+import type { Organization } from '@vlabel/shared';
 
 // 5 yếu tố chuẩn GS1 EPCIS. How = media.
 const EPCIS = [
@@ -38,7 +40,7 @@ export default function Flows() {
     queryKey: ['flows', 'manage', page, orgFilter, flowQ],
     queryFn: () => api.get('/flows', { params: { page, pageSize: 8, q: flowQ || undefined, organizationId: orgFilter || undefined } }).then((r) => r.data),
   });
-  const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
+  const orgs = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
   const [sel, setSel] = useState<any | null>(null);
   const [tab, setTab] = useState<'fields' | 'perm' | 'public'>('fields');
   const [newFlow, setNewFlow] = useState({ name: '', code: '' });
@@ -58,15 +60,15 @@ export default function Flows() {
     } catch (e) { toast(apiError(e), false); }
   };
 
-  const mCreate = useMutation({ mutationFn: () => api.post('/flows', newFlow), onSuccess: () => { toast('Đã tạo Flow'); setNewFlow({ name: '', code: '' }); invalidate(); }, onError: (e) => toast(apiError(e), false) });
-  const mClone = useMutation({ mutationFn: (id: string) => api.post(`/flows/${id}/clone`), onSuccess: () => { toast('Đã nhân bản Flow'); invalidate(); }, onError: (e) => toast(apiError(e), false) });
-  const mUpdateFlow = useMutation({ mutationFn: ({ id, body }: any) => api.patch(`/flows/${id}`, body), onSuccess: () => { toast('Đã lưu Flow'); setEditFlow(null); invalidate(); }, onError: (e) => toast(apiError(e), false) });
-  const mDelete = useMutation({ mutationFn: (id: string) => api.delete(`/flows/${id}`).then((r) => r.data), onSuccess: (d: any) => { toast(d?.productCount ? `Đã xoá Flow · đã gỡ khỏi ${d.productCount} sản phẩm` : 'Đã xoá Flow'); invalidate(); qc.invalidateQueries({ queryKey: ['products'] }); }, onError: (e) => toast(apiError(e), false) });
+  const mCreate = useApiMutation(() => api.post('/flows', newFlow), { successMessage: 'Đã tạo Flow', invalidate: [['flows']], onSuccess: () => setNewFlow({ name: '', code: '' }) });
+  const mClone = useApiMutation((id: string) => api.post(`/flows/${id}/clone`), { successMessage: 'Đã nhân bản Flow', invalidate: [['flows']] });
+  const mUpdateFlow = useApiMutation(({ id, body }: any) => api.patch(`/flows/${id}`, body), { successMessage: 'Đã lưu Flow', invalidate: [['flows']], onSuccess: () => setEditFlow(null) });
+  const mDelete = useApiMutation((id: string) => api.delete(`/flows/${id}`).then((r) => r.data), { successMessage: (d: any) => (d?.productCount ? `Đã xoá Flow · đã gỡ khỏi ${d.productCount} sản phẩm` : 'Đã xoá Flow'), invalidate: [['flows'], ['products']] });
   const mPublish = useMutation({ mutationFn: (id: string) => api.post(`/flows/${id}/publish`), onSuccess: () => { toast('🎉 Đã xuất bản'); invalidate(); } });
-  const mAddEvent = useMutation({ mutationFn: ({ versionId, name, code }: any) => api.post(`/flow-versions/${versionId}/events`, { name, code, enterRoleKeys: ['DATA_ENTRY', 'MANAGER'], approveRoleKeys: ['MANAGER', 'ADMIN', 'SUPERADMIN'] }), onSuccess: () => { toast('Đã thêm sự kiện'); invalidate(); }, onError: (e) => toast(apiError(e), false) });
+  const mAddEvent = useApiMutation(({ versionId, name, code }: any) => api.post(`/flow-versions/${versionId}/events`, { name, code, enterRoleKeys: ['DATA_ENTRY', 'MANAGER'], approveRoleKeys: ['MANAGER', 'ADMIN', 'SUPERADMIN'] }), { successMessage: 'Đã thêm sự kiện', invalidate: [['flows']] });
   const mDelEvent = useMutation({ mutationFn: (id: string) => api.delete(`/event-definitions/${id}`), onSuccess: () => { toast('Đã xoá sự kiện'); setSel(null); invalidate(); } });
   const mUpdEvent = useMutation({ mutationFn: ({ id, body }: any) => api.patch(`/event-definitions/${id}`, body), onSuccess: (r) => { setSel(r.data); invalidate(); } });
-  const mAddField = useMutation({ mutationFn: ({ id, body }: any) => api.post(`/event-definitions/${id}/fields`, body), onSuccess: () => { toast('Đã thêm trường'); refreshSel(); invalidate(); }, onError: (e) => toast(apiError(e), false) });
+  const mAddField = useApiMutation(({ id, body }: any) => api.post(`/event-definitions/${id}/fields`, body), { successMessage: 'Đã thêm trường', invalidate: [['flows']], onSuccess: () => refreshSel() });
   const mUpdField = useMutation({ mutationFn: ({ id, body }: any) => api.patch(`/event-fields/${id}`, body), onSuccess: () => { refreshSel(); invalidate(); } });
   const mDelField = useMutation({ mutationFn: (id: string) => api.delete(`/event-fields/${id}`), onSuccess: () => { refreshSel(); invalidate(); } });
 
@@ -80,10 +82,10 @@ export default function Flows() {
 
   return (
     <>
-      <PageHead title="Flow & Event" subtitle="Thiết kế quy trình truy xuất · nhấp sự kiện để cấu hình" />
+      <PageHead eyebrow="Thiết kế quy trình" title="Flow & Event" subtitle="Thiết kế quy trình truy xuất · nhấp sự kiện để cấu hình" />
 
       {canManage && (
-        <div className="card p-5 mb-4">
+        <div className="card p-5 mb-5">
           <div className="flex items-center gap-3 mb-4">
             <span className="iconbox"><Plus size={18} /></span>
             <div>
@@ -99,14 +101,14 @@ export default function Flows() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2.5 mb-4 items-center">
+      <div className="flex flex-wrap gap-2.5 mb-5 items-center">
         <div className="flex items-center gap-2 rounded-full px-4 h-11 flex-1 min-w-[220px]" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
           <Search size={16} className="text-[var(--muted)]" />
           <input className="flex-1 bg-transparent outline-none text-sm" placeholder="Tìm flow theo tên / mã…" value={flowQ} onChange={(e) => { setFlowQ(e.target.value); setPage(1); }} />
         </div>
         <select className="input h-11" style={{ maxWidth: 220, width: 'auto' }} value={orgFilter} onChange={(e) => { setOrgFilter(e.target.value); setPage(1); }}>
           <option value="">Tất cả tổ chức</option>
-          {(orgs.data ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          {(orgs.data ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </div>
 
@@ -122,7 +124,7 @@ export default function Flows() {
             return (
               <div key={flow.id} className="card card-hover p-5 anim-in">
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  <span className="w-10 h-10 rounded-xl grid place-items-center text-white flex-none" style={{ background: 'var(--accent)' }}><GitBranch size={18} /></span>
+                  <span className="w-10 h-10 rounded-xl grid place-items-center flex-none" style={{ color: 'var(--accent-contrast)', background: 'var(--accent)' }}><GitBranch size={18} /></span>
                   <div className="flex-1 min-w-[160px]">
                     <b className="text-[15px]">{flow.name}</b>
                     <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
@@ -328,13 +330,13 @@ export default function Flows() {
           <label className="block mb-4"><span className="label">Mã</span><input className="input mono" value={editFlow.code} onChange={(e) => setEditFlow({ ...editFlow, code: e.target.value })} /></label>
           <span className="label">Thuộc tổ chức / bộ phận (chọn nhiều)</span>
           <div className="flex flex-col gap-1 max-h-[240px] overflow-auto p-1.5 rounded-xl mb-2" style={{ border: '1px solid var(--border)', background: 'var(--surface)' }}>
-            {(orgs.data ?? []).map((o: any) => {
+            {(orgs.data ?? []).map((o) => {
               const on = editFlow.organizationIds.includes(o.id);
               return (
-                <button key={o.id} className="flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-colors" style={{ background: on ? 'var(--accent-soft)' : 'transparent', marginLeft: o.level * 12 }}
+                <button key={o.id} className="flex items-center gap-2.5 p-2.5 rounded-lg text-left transition-colors" style={{ background: on ? 'var(--accent-soft)' : 'transparent', marginLeft: (o.level ?? 0) * 12 }}
                   onClick={() => setEditFlow({ ...editFlow, organizationIds: on ? editFlow.organizationIds.filter((x: string) => x !== o.id) : [...editFlow.organizationIds, o.id] })}>
-                  <span className="w-5 h-5 rounded-md grid place-items-center flex-none transition-colors" style={{ border: '1.5px solid var(--border-strong)', background: on ? 'var(--accent)' : 'transparent' }}>{on && <Check size={12} className="text-white" />}</span>
-                  <span className="text-sm flex-1">{o.name}</span><span className="chip" style={{ fontSize: 11 }}>Cấp {o.level + 1}</span>
+                  <span className="w-5 h-5 rounded-md grid place-items-center flex-none transition-colors" style={{ border: '1.5px solid var(--border-strong)', background: on ? 'var(--accent)' : 'transparent' }}>{on && <Check size={12} style={{ color: 'var(--accent-contrast)' }} />}</span>
+                  <span className="text-sm flex-1">{o.name}</span><span className="chip" style={{ fontSize: 11 }}>Cấp {(o.level ?? 0) + 1}</span>
                 </button>
               );
             })}

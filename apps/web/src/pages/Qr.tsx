@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Loader2, Link2 } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { Plus, Loader2, Link2, QrCode } from '../lib/icons';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, StatusPill, Drawer } from '../components/ui';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, StatusPill, Drawer, EmptyState } from '../components/ui';
 import { PERMISSIONS, validateGtin } from '@vlabel/shared';
 
 export default function Qr() {
@@ -19,22 +20,21 @@ export default function Qr() {
   const list = useQuery({ queryKey: ['qr'], queryFn: () => api.get('/qr').then((r) => r.data) });
   const [assignQr, setAssignQr] = useState<any | null>(null);
   const items = useQuery({ queryKey: ['items'], enabled: !!assignQr, queryFn: () => api.get('/traceable-items').then((r) => r.data) });
-  const assign = useMutation({
-    mutationFn: ({ qrId, itemId }: { qrId: string; itemId: string }) => api.post(`/qr/${qrId}/assign`, { traceableItemId: itemId }),
-    onSuccess: () => { toast('Đã gán QR cho lô'); setAssignQr(null); qc.invalidateQueries({ queryKey: ['qr'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const assign = useApiMutation(({ qrId, itemId }: { qrId: string; itemId: string }) => api.post(`/qr/${qrId}/assign`, { traceableItemId: itemId }), {
+    successMessage: 'Đã gán QR cho lô',
+    invalidate: [['qr']],
+    onSuccess: () => setAssignQr(null),
   });
 
   const [csv, setCsv] = useState('');
-  const gen = useMutation({
-    mutationFn: () => api.post('/qr/generate', { gtin: validateGtin(gtin).normalized, lot, quantity }),
-    onSuccess: (r) => { toast(`🎉 Đã sinh ${r.data.generated} mã QR`); qc.invalidateQueries({ queryKey: ['qr'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const gen = useApiMutation(() => api.post('/qr/generate', { gtin: validateGtin(gtin).normalized, lot, quantity }), {
+    successMessage: (r) => `🎉 Đã sinh ${r.data.generated} mã QR`,
+    invalidate: [['qr']],
   });
-  const imp = useMutation({
-    mutationFn: () => api.post('/qr/import-csv', { csv }),
-    onSuccess: (r) => { toast(`Đã import ${r.data.generated} mã (${r.data.skipped} dòng lỗi)`); setCsv(''); qc.invalidateQueries({ queryKey: ['qr'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const imp = useApiMutation(() => api.post('/qr/import-csv', { csv }), {
+    successMessage: (r) => `Đã import ${r.data.generated} mã (${r.data.skipped} dòng lỗi)`,
+    invalidate: [['qr']],
+    onSuccess: () => setCsv(''),
   });
   const showPng = async (id: string) => {
     const { data } = await api.get(`/qr/${id}/png`);
@@ -49,7 +49,7 @@ export default function Qr() {
 
   return (
     <>
-      <PageHead title="Mã QR" subtitle="Sinh, gán, theo dõi lượt quét" />
+      <PageHead eyebrow="Truy xuất" title="Mã QR" subtitle="Sinh, gán, theo dõi lượt quét" />
       <div className="grid lg:grid-cols-[1fr_300px] gap-4">
         <div className="flex flex-col gap-4">
           {can(PERMISSIONS.QR_MANAGE) && (
@@ -71,29 +71,33 @@ export default function Qr() {
               </div>
             </div>
           )}
-          <div className="card overflow-x-auto">
-            {list.isLoading ? <Spinner /> : (
+          {list.isLoading ? <div className="card"><Spinner /></div> : (list.data?.length ?? 0) === 0 ? (
+            <div className="card"><EmptyState title="Chưa có mã QR" hint="Sinh mã hàng loạt hoặc import CSV để bắt đầu." /></div>
+          ) : (
+            <div className="card overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[var(--faint)]">
+                <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[var(--faint)]" style={{ borderBottom: '1px solid var(--border)' }}>
                   <th className="px-4 py-3 font-bold">GTIN / Lô</th><th className="px-4 py-3 font-bold">Quét</th>
-                  <th className="px-4 py-3 font-bold">Trạng thái</th><th className="px-4 py-3 font-bold"></th></tr></thead>
-                <tbody>
+                  <th className="px-4 py-3 font-bold">Trạng thái</th><th className="px-4 py-3 font-bold text-right">Thao tác</th></tr></thead>
+                <tbody className="rows">
                   {(list.data ?? []).map((q: any) => (
-                    <tr key={q.id} style={{ borderTop: '1px solid var(--border)' }}>
+                    <tr key={q.id} className="card-hover">
                       <td className="px-4 py-3"><b className="mono">{q.gtin}</b><div className="text-xs text-[var(--muted)] mono">{q.lot ?? q.serial ?? '—'}</div></td>
                       <td className="px-4 py-3 num">{q._count?.scanLogs ?? 0}</td>
                       <td className="px-4 py-3"><StatusPill status={q.status} /></td>
-                      <td className="px-4 py-3 flex gap-1.5">
-                        <button className="btn btn-sm" onClick={() => showPng(q.id)}>QR</button>
-                        {can(PERMISSIONS.QR_MANAGE) && <button className="btn btn-sm" onClick={() => setAssignQr(q)}><Link2 size={13} />Gán</button>}
-                        {can(PERMISSIONS.QR_MANAGE) && q.status === 'ACTIVE' && <button className="btn btn-sm btn-danger" onClick={() => setStatus.mutate({ id: q.id, action: 'revoke' })}>Thu hồi</button>}
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1.5 justify-end">
+                          <button className="btn btn-sm" onClick={() => showPng(q.id)}><QrCode size={13} />QR</button>
+                          {can(PERMISSIONS.QR_MANAGE) && <button className="btn btn-sm" onClick={() => setAssignQr(q)}><Link2 size={13} />Gán</button>}
+                          {can(PERMISSIONS.QR_MANAGE) && q.status === 'ACTIVE' && <button className="btn btn-sm btn-danger" onClick={() => setStatus.mutate({ id: q.id, action: 'revoke' })}>Thu hồi</button>}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <div className="card p-5 text-center h-fit">
           <h3 className="font-semibold mb-3">Xem trước</h3>
@@ -103,7 +107,12 @@ export default function Qr() {
               <div className="mono text-[11px] text-[var(--faint)] mt-3 break-all">{preview.url}</div>
               <a className="btn btn-sm mt-3 inline-flex" href={preview.dataUrl} download="qr.png">Tải PNG</a>
             </>
-          ) : <p className="text-sm text-[var(--muted)] py-8">Nhấp “QR” ở một dòng để xem mã.</p>}
+          ) : (
+            <div className="py-8 flex flex-col items-center gap-3 text-[var(--muted)]">
+              <span className="iconbox" style={{ width: 48, height: 48 }}><QrCode size={22} /></span>
+              <p className="text-sm">Nhấp “QR” ở một dòng để xem mã.</p>
+            </div>
+          )}
         </div>
       </div>
       <Drawer open={!!assignQr} onClose={() => setAssignQr(null)}

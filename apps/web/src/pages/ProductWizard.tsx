@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Check, Loader2, ChevronRight, ChevronLeft, GitBranch, Search, Package, Building2, Eye } from 'lucide-react';
+import { Check, Loader2, ChevronRight, ChevronLeft, GitBranch, Search, Package, Building2, Eye } from '../lib/icons';
+import type { Flow, Organization } from '@vlabel/shared';
 import { api, apiError } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { PageHead, Spinner, ProgressBar } from '../components/ui';
@@ -20,8 +21,8 @@ export default function ProductWizard() {
   const [flowId, setFlowId] = useState('');
 
   const vnpc = useQuery({ queryKey: ['vnpc', q], queryFn: () => api.get('/integrations/vnpc/products', { params: { q } }).then((r) => r.data) });
-  const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
-  const flows = useQuery({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
+  const orgs = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
+  const flows = useQuery<Flow[]>({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
 
   const create = useMutation({
     mutationFn: async () => {
@@ -43,7 +44,7 @@ export default function ProductWizard() {
 
   return (
     <>
-      <PageHead title="Tạo sản phẩm" subtitle={`Bước ${step}/5 · ${STEPS[step - 1]}`}
+      <PageHead eyebrow="Sản phẩm" title="Tạo sản phẩm" subtitle={`Bước ${step}/5 · ${STEPS[step - 1]}`}
         actions={<button className="btn btn-ghost" onClick={() => nav('/products')}>Huỷ</button>} />
 
       {/* Progress (mobile-first) */}
@@ -136,11 +137,11 @@ export default function ProductWizard() {
                 </div>
                 <p className="text-sm text-[var(--muted)] mb-5">Chọn đơn vị chịu trách nhiệm sản phẩm.</p>
                 <div className="grid gap-2.5">
-                  {(orgs.data ?? []).map((o: any) => (
+                  {(orgs.data ?? []).map((o) => (
                     <button key={o.id} onClick={() => setOrganizationId(o.id)} className={`opt ${organizationId === o.id ? 'sel' : ''}`}
-                      style={{ marginLeft: o.level * 16 }}>
+                      style={{ marginLeft: (o.level ?? 0) * 16 }}>
                       <Building2 size={17} className="text-[var(--accent)] flex-none" />
-                      <b className="text-sm flex-1 min-w-0 truncate">{o.name}</b><span className="chip flex-none">Cấp {o.level + 1}</span>
+                      <b className="text-sm flex-1 min-w-0 truncate">{o.name}</b><span className="chip flex-none">Cấp {(o.level ?? 0) + 1}</span>
                       {organizationId === o.id && <Check size={17} className="text-[var(--accent)] flex-none" />}
                     </button>
                   ))}
@@ -157,7 +158,7 @@ export default function ProductWizard() {
                 </div>
                 <p className="text-sm text-[var(--muted)] mb-5">Mỗi sản phẩm chỉ một Flow. Khi kê khai sẽ đi theo Flow này (có thể gán sau ở Quản lý sản phẩm).</p>
                 <div className="grid gap-2.5">
-                  {(flows.data ?? []).map((f: any) => (
+                  {(flows.data ?? []).map((f) => (
                     <button key={f.id} onClick={() => setFlowId(flowId === f.id ? '' : f.id)} className={`opt ${flowId === f.id ? 'sel' : ''}`}>
                       <span className="iconbox" style={{ width: 34, height: 34, background: flowId === f.id ? 'var(--accent)' : 'var(--accent-soft)', color: flowId === f.id ? '#fff' : 'var(--accent)' }}>
                         <GitBranch size={17} />
@@ -181,8 +182,8 @@ export default function ProductWizard() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 p-4 rounded-[14px] max-w-[480px] mx-auto mt-2" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                   {[['Tên', name], ['GTIN', picked?.gtin], ['Nguồn', 'VNPC'],
-                    ['Đơn vị', (orgs.data ?? []).find((o: any) => o.id === organizationId)?.name ?? '·'],
-                    ['Flow', (flows.data ?? []).find((f: any) => f.id === flowId)?.name ?? 'Chưa gán']].map(([k, v]) => (
+                    ['Đơn vị', (orgs.data ?? []).find((o) => o.id === organizationId)?.name ?? '·'],
+                    ['Flow', (flows.data ?? []).find((f) => f.id === flowId)?.name ?? 'Chưa gán']].map(([k, v]) => (
                     <div key={k as string}><div className="text-[11.5px] text-[var(--muted)] mb-0.5">{k}</div><b className="text-sm">{v}</b></div>
                   ))}
                 </div>

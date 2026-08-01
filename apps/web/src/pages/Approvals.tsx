@@ -1,39 +1,36 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Check, X, Edit3, Lock } from 'lucide-react';
-import { api, apiError, fileUrl } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { Check, X, Edit3, Lock } from '../lib/icons';
+import { api, fileUrl } from '../lib/api';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, StatusPill } from '../components/ui';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, EmptyState, StatusPill, SegmentedControl } from '../components/ui';
 
 export default function Approvals() {
   const toast = useToast();
-  const qc = useQueryClient();
   const [view, setView] = useState<'pending' | 'approved'>('pending');
   const q = useQuery({ queryKey: ['approvals', view], queryFn: () => api.get(`/approvals/${view}`).then((r) => r.data) });
   const [comments, setComments] = useState<Record<string, string>>({});
 
-  const act = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: string }) => api.post(`/approvals/${id}/${action}`, { comment: comments[id] }),
-    onSuccess: (_d, v) => {
-      const msg: Record<string, string> = { approve: '✅ Đã duyệt', reject: 'Đã từ chối', 'request-changes': '↩️ Đã yêu cầu sửa', lock: '🔒 Đã khoá' };
-      toast(msg[v.action] ?? 'Đã xử lý', v.action !== 'reject');
-      qc.invalidateQueries({ queryKey: ['approvals'] });
+  const act = useApiMutation(
+    ({ id, action }: { id: string; action: string }) => api.post(`/approvals/${id}/${action}`, { comment: comments[id] }),
+    {
+      invalidate: [['approvals']],
+      onSuccess: (_d, v) => {
+        const msg: Record<string, string> = { approve: '✅ Đã duyệt', reject: 'Đã từ chối', 'request-changes': '↩️ Đã yêu cầu sửa', lock: '🔒 Đã khoá' };
+        toast(msg[v.action] ?? 'Đã xử lý', v.action !== 'reject');
+      },
     },
-    onError: (e) => toast(apiError(e), false),
-  });
+  );
 
   return (
     <>
-      <PageHead title="Duyệt hồ sơ" subtitle="Phê duyệt & khoá dữ liệu sau duyệt"
+      <PageHead eyebrow="Kiểm duyệt" title="Duyệt hồ sơ" subtitle="Phê duyệt & khoá dữ liệu sau duyệt"
         actions={
-          <div className="inline-flex rounded-[10px] p-0.5 gap-0.5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            {(['pending', 'approved'] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className="px-3 py-1.5 rounded-lg text-[13px] font-semibold"
-                style={view === v ? { background: 'var(--bg)', color: 'var(--ink)' } : { color: 'var(--muted)' }}>
-                {v === 'pending' ? 'Chờ duyệt' : 'Đã duyệt'}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl value={view} onChange={setView} options={[
+            { value: 'pending', label: 'Chờ duyệt' },
+            { value: 'approved', label: 'Đã duyệt' },
+          ]} />
         } />
       {q.isLoading ? <Spinner /> : (q.data?.length ?? 0) === 0 ? (
         <div className="card"><EmptyState title={view === 'pending' ? 'Không có hồ sơ chờ duyệt' : 'Chưa có hồ sơ đã duyệt'} /></div>
@@ -51,7 +48,7 @@ export default function Approvals() {
               </div>
               <div className="grid grid-cols-2 gap-2.5 p-3.5 rounded-xl mb-3" style={{ background: 'var(--surface)' }}>
                 {(r.values ?? []).map((v: any) => (
-                  <div key={v.id}><div className="text-[11.5px] text-[var(--muted)]">{v.fieldKey}</div><b className="text-sm">{String(v.valueJson)}</b></div>
+                  <div key={v.id}><div className="text-[11.5px] text-[var(--muted)] mono">{v.fieldKey}</div><b className="text-sm">{String(v.valueJson)}</b></div>
                 ))}
               </div>
               {(r.media ?? []).length > 0 && (

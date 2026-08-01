@@ -1,7 +1,7 @@
 import { useState, type ReactNode, type CSSProperties } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ShieldCheck, Check, Building2, FileText, MapPin, Globe, AlertTriangle, Award, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Check, Building2, FileText, MapPin, Globe, AlertTriangle, Award, ExternalLink } from '../lib/icons';
 import { api, fileUrl } from '../lib/api';
 import { Spinner } from '../components/ui';
 
@@ -10,7 +10,7 @@ const RISK = ['Chưa xác định', 'Cao', 'Trung bình', 'Thấp'];
 // Bảng màu editorial "hộ chiếu sản phẩm"
 const C = {
   outer: '#e7e4dd', page: '#f7f4ee', card: '#fff', line: '#efece4', line2: '#ebe7df', rowLine: '#f0ede6', dash: '#e6e1d8',
-  navy: '#1f3a6d', navyDeep: '#16213f', ink: '#1b1a18', body: '#54514a', muted: '#6f6b62',
+  navy: '#14486f', navyDeep: '#16213f', ink: '#1b1a18', body: '#54514a', muted: '#6f6b62',
   label: '#8a857c', faint: '#a6a096', faint2: '#b0a99e', chipBg: '#eef1fb', chipBorder: '#dde3f5',
   green: '#7dd4a6', footer: '#f1ede5',
 };
@@ -86,7 +86,7 @@ export default function PublicTrace() {
           </div>
           <div style={{ position: 'relative' }}>
             <div style={{ width: 30, height: 30, borderRadius: 9, background: C.chipBg, border: `1px solid ${C.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy }}>
-              <ShieldCheck size={16} strokeWidth={2.2} />
+              <ShieldCheck size={16} />
             </div>
             <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: C.green, border: '2px solid #f7f4ee' }} />
           </div>
@@ -96,7 +96,7 @@ export default function PublicTrace() {
         <div style={{ margin: '13px 16px 0', background: 'linear-gradient(135deg,#eef1fb,#f6f4ee)', border: `1px solid ${C.chipBorder}`, borderRadius: 16, padding: '13px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{ width: 42, height: 42, borderRadius: 12, background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 7px 18px -6px rgba(31,58,109,.6)' }}>
-              <ShieldCheck size={22} color="#fff" strokeWidth={2} />
+              <ShieldCheck size={22} color="#fff" />
             </div>
             <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 13, height: 13, borderRadius: '50%', background: C.green, border: '2.5px solid #f3f2ee' }} />
           </div>
@@ -108,7 +108,7 @@ export default function PublicTrace() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
                   {['Truy xuất nguồn gốc', 'Nhãn điện tử'].map((x) => (
                     <span key={x} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `1px solid ${C.chipBorder}`, borderRadius: 999, padding: '4px 9px 4px 6px', fontSize: 10.5, fontWeight: 600, color: C.navy }}>
-                      <span style={{ width: 14, height: 14, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={9} color="#fff" strokeWidth={4} /></span>
+                      <span style={{ width: 14, height: 14, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={9} color="#fff" /></span>
                       {x}
                     </span>
                   ))}
@@ -228,7 +228,7 @@ export default function PublicTrace() {
               <div style={{ background: C.navy, borderRadius: 18, padding: 16, display: 'flex', gap: 13, alignItems: 'flex-start', boxShadow: '0 12px 30px -14px rgba(31,58,109,.55)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', right: -30, top: -30, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
                 <div style={{ width: 40, height: 40, borderRadius: 11, background: 'rgba(255,255,255,.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShieldCheck size={20} color="#eaf0ff" strokeWidth={1.8} />
+                  <ShieldCheck size={20} color="#eaf0ff" />
                 </div>
                 <div style={{ position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>

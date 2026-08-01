@@ -1,5 +1,16 @@
 import type { ReactNode } from 'react';
-import { Loader2, Inbox, X } from 'lucide-react';
+import { Loader2, Inbox, X } from '../lib/icons';
+import { statusMeta, STATUS_LABELS, type StatusMeta, type StatusTone } from '@vlabel/shared';
+
+// Map tông ngữ nghĩa (shared) -> class pill của web.
+export function toneClass(tone: StatusTone): string {
+  return `pill-${tone === 'danger' ? 'bad' : tone}`;
+}
+
+// Chuyển bảng nhãn shared sang dạng { cls, label } để các trang cũ dùng lại y nguyên.
+export function statusClsMap(table: Record<string, StatusMeta>): Record<string, { cls: string; label: string }> {
+  return Object.fromEntries(Object.entries(table).map(([k, m]) => [k, { cls: toneClass(m.tone), label: m.label }]));
+}
 
 export function Spinner({ label }: { label?: string }) {
   return (
@@ -22,31 +33,23 @@ export function EmptyState({ title, hint, action }: { title: string; hint?: stri
   );
 }
 
-export function PageHead({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageHead({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: string; actions?: ReactNode; eyebrow?: string }) {
   return (
     <div className="flex items-end gap-3.5 mb-5 flex-wrap">
       <div>
-        <h2 className="text-[23px] font-bold tracking-tight">{title}</h2>
-        {subtitle && <p className="mt-0.5 text-sm text-[var(--muted)]">{subtitle}</p>}
+        {eyebrow && <span className="eyebrow mb-1.5">{eyebrow}</span>}
+        <h2 className="serif text-[27px] font-bold leading-tight">{title}</h2>
+        {subtitle && <p className="mt-1 text-sm text-[var(--muted)]">{subtitle}</p>}
       </div>
       {actions && <div className="ml-auto flex gap-2 flex-wrap">{actions}</div>}
     </div>
   );
 }
 
-const STATUS: Record<string, { cls: string; label: string }> = {
-  DRAFT: { cls: 'pill-warn', label: 'Nháp' },
-  SUBMITTED: { cls: 'pill-neutral', label: 'Chờ duyệt' },
-  APPROVED: { cls: 'pill-good', label: 'Đã duyệt' },
-  REJECTED: { cls: 'pill-bad', label: 'Từ chối' },
-  CHANGES_REQUESTED: { cls: 'pill-warn', label: 'Cần sửa' },
-  LOCKED: { cls: 'pill-good', label: 'Đã khóa' },
-  ACTIVE: { cls: 'pill-good', label: 'Hoạt động' },
-  REVOKED: { cls: 'pill-bad', label: 'Thu hồi' },
-};
-export function StatusPill({ status }: { status: string }) {
-  const s = STATUS[status] ?? { cls: 'pill-neutral', label: status };
-  return <span className={`pill ${s.cls}`}><i />{s.label}</span>;
+// Nhãn/tông trạng thái lấy từ @vlabel/shared. Truyền `table` để dùng bảng khác (trace-task, e-label...).
+export function StatusPill({ status, table }: { status: string; table?: Record<string, StatusMeta> }) {
+  const m = statusMeta(status, table ?? STATUS_LABELS);
+  return <span className={`pill ${toneClass(m.tone)}`}><i />{m.label}</span>;
 }
 
 export function StatCard({ icon, label, value, tone = 'accent' }: { icon?: ReactNode; label: string; value: ReactNode; tone?: 'accent' | 'good' | 'warn' | 'danger' }) {
@@ -105,8 +108,13 @@ export function usePaged<T>(items: T[], match: (it: T, q: string) => boolean, q:
 export function Avatar({ name, size = 32 }: { name?: string; size?: number }) {
   const initials = (name ?? '?').split(' ').map((w) => w[0]).slice(-2).join('').toUpperCase();
   return (
-    <span className="rounded-full grid place-items-center text-white font-bold flex-none" style={{ width: size, height: size, fontSize: size * 0.36, background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{initials}</span>
+    <span className="serif rounded-full grid place-items-center font-bold flex-none" style={{ width: size, height: size, fontSize: size * 0.4, color: 'var(--accent-contrast)', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{initials}</span>
   );
+}
+
+// Hàng khoá–giá trị dùng chung cho các thẻ tóm tắt/xác nhận (Helper, Entry, Supplementary).
+export function Row({ k, v, mono }: { k: string; v: ReactNode; mono?: boolean }) {
+  return <div className="flex justify-between gap-4 py-2.5 text-sm"><span className="text-[var(--muted)] flex-none">{k}</span><b className={`text-right ${mono ? 'mono' : ''}`}>{v ?? '—'}</b></div>;
 }
 
 export function Drawer({ open, onClose, title, children, footer }: {

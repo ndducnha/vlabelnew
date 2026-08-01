@@ -1,19 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History, Search } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { Plus, QrCode, Check, Download, Loader2, Pencil, Trash2, GitBranch, UploadCloud, History, Search } from '../lib/icons';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
+import { useApiMutation } from '../lib/useApiMutation';
 import { PageHead, Spinner, EmptyState, Drawer, Paginator, usePaged } from '../components/ui';
 import { PERMISSIONS } from '@vlabel/shared';
+import type { Product, Organization, Flow } from '@vlabel/shared';
 
 export default function Products() {
   const { can } = useAuth();
-  const toast = useToast();
-  const qc = useQueryClient();
   const canEdit = can(PERMISSIONS.PRODUCT_UPDATE);
-  const q = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const q = useQuery<Product[]>({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
   const [editProduct, setEditProduct] = useState<any | null>(null);
   const [qrProduct, setQrProduct] = useState<any | null>(null);
   const [traceProduct, setTraceProduct] = useState<any | null>(null);
@@ -22,20 +22,17 @@ export default function Products() {
   const paged = usePaged<any>(q.data ?? [], (p, ql) =>
     (p.name ?? '').toLowerCase().includes(ql) || (p.gtin ?? '').toLowerCase().includes(ql) || (p.organization?.name ?? '').toLowerCase().includes(ql), query, page);
 
-  const del = useMutation({
-    mutationFn: (id: string) => api.delete(`/products/${id}`),
-    onSuccess: () => { toast('Đã xoá sản phẩm'); qc.invalidateQueries({ queryKey: ['products'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const del = useApiMutation((id: string) => api.delete(`/products/${id}`), {
+    successMessage: 'Đã xoá sản phẩm',
+    invalidate: [['products']],
   });
-  const sync = useMutation({
-    mutationFn: (id: string) => api.post(`/products/${id}/sync`),
-    onSuccess: () => toast('Đã đồng bộ lên Cổng truy xuất nguồn gốc quốc gia'),
-    onError: (e) => toast(apiError(e), false),
+  const sync = useApiMutation((id: string) => api.post(`/products/${id}/sync`), {
+    successMessage: 'Đã đồng bộ lên Cổng truy xuất nguồn gốc quốc gia',
   });
 
   return (
     <>
-      <PageHead title="Quản lý sản phẩm" subtitle="Gắn GTIN với tên & thông tin, gán Flow truy xuất, tải QR"
+      <PageHead eyebrow="Sản phẩm" title="Quản lý sản phẩm" subtitle="Gắn GTIN với tên & thông tin, gán Flow truy xuất, tải QR"
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -48,7 +45,7 @@ export default function Products() {
           action={can(PERMISSIONS.PRODUCT_CREATE) && <Link to="/products/new" className="btn btn-primary btn-sm"><Plus size={15} />Tạo sản phẩm</Link>} /></div>
       ) : (
         <div className="flex flex-col gap-3">
-          {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy sản phẩm phù hợp.</p>}
+          {paged.total === 0 && <div className="card"><EmptyState title="Không tìm thấy sản phẩm phù hợp." hint="Thử từ khoá khác cho tên, GTIN hoặc đơn vị." /></div>}
           {paged.rows.map((p: any) => (
             <div key={p.id} className="card card-hover anim-in p-4 flex flex-col gap-3.5 lg:flex-row lg:items-center lg:gap-5">
               <div className="min-w-0 flex-1 flex flex-col gap-2">
@@ -97,12 +94,9 @@ function toLocalInput(iso?: string) {
 
 /** Xem & cập nhật dữ liệu truy xuất (event records) của một sản phẩm. */
 function TraceRecords({ product, onClose }: { product: any; onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
   const recs = useQuery({ queryKey: ['records', product.id], queryFn: () => api.get('/event-records/by-product', { params: { productId: product.id } }).then((r) => r.data) });
   const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState<any>({ performedByName: '', when: '', location: '', action: '', values: {} as Record<string, any> });
-  const inv = () => qc.invalidateQueries({ queryKey: ['records', product.id] });
 
   const openEdit = (r: any) => {
     const values: Record<string, any> = {};
@@ -110,16 +104,16 @@ function TraceRecords({ product, onClose }: { product: any; onClose: () => void 
     setForm({ performedByName: r.performedByName ?? r.performedBy?.fullName ?? '', when: toLocalInput(r.performedAt), location: r.location ?? '', action: r.action ?? '', values });
     setEditing(r);
   };
-  const save = useMutation({
-    mutationFn: () => api.patch(`/event-records/${editing.id}`, {
+  const save = useApiMutation(() => api.patch(`/event-records/${editing.id}`, {
       traceableItemId: editing.traceableItemId, flowVersionId: editing.flowVersionId, eventDefinitionId: editing.eventDefinitionId,
       performedByName: form.performedByName, performedAt: form.when ? new Date(form.when).toISOString() : undefined,
       location: form.location, action: form.action, values: form.values,
-    }),
-    onSuccess: () => { toast('Đã cập nhật hồ sơ'); setEditing(null); inv(); },
-    onError: (e) => toast(apiError(e), false),
+    }), {
+    successMessage: 'Đã cập nhật hồ sơ',
+    invalidate: [['records', product.id]],
+    onSuccess: () => setEditing(null),
   });
-  const del = useMutation({ mutationFn: (id: string) => api.delete(`/event-records/${id}`), onSuccess: () => { toast('Đã xoá hồ sơ'); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const del = useApiMutation((id: string) => api.delete(`/event-records/${id}`), { successMessage: 'Đã xoá hồ sơ', invalidate: [['records', product.id]] });
 
   return (
     <Drawer open onClose={onClose} title={<><b>Dữ liệu truy xuất</b><div className="text-xs text-[var(--muted)]">{product.name}</div></>}
@@ -165,23 +159,21 @@ function TraceRecords({ product, onClose }: { product: any; onClose: () => void 
 }
 
 function EditProduct({ product, onClose }: { product: any; onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
-  const flows = useQuery({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
+  const orgs = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
+  const flows = useQuery<Flow[]>({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
   const [name, setName] = useState(product.name ?? '');
   const [description, setDescription] = useState(product.description ?? '');
   const [organizationId, setOrganizationId] = useState(product.organizationId ?? '');
   const [flowId, setFlowId] = useState<string>(product.flows?.[0]?.flow.id ?? '');
   const [traceMode, setTraceMode] = useState(product.traceMode ?? 'SHARED');
 
-  const save = useMutation({
-    mutationFn: async () => {
+  const save = useApiMutation(async () => {
       await api.patch(`/products/${product.id}`, { name, description, organizationId: organizationId || undefined, traceMode });
       await api.put(`/products/${product.id}/flows`, { flowIds: flowId ? [flowId] : [] });
-    },
-    onSuccess: () => { toast('Đã lưu sản phẩm'); qc.invalidateQueries({ queryKey: ['products'] }); onClose(); },
-    onError: (e) => toast(apiError(e), false),
+    }, {
+    successMessage: 'Đã lưu sản phẩm',
+    invalidate: [['products']],
+    onSuccess: () => onClose(),
   });
 
   return (
@@ -193,7 +185,7 @@ function EditProduct({ product, onClose }: { product: any; onClose: () => void }
       <label className="block mb-4"><span className="label">Đơn vị</span>
         <select className="input" value={organizationId} onChange={(e) => setOrganizationId(e.target.value)}>
           <option value="">Chọn đơn vị</option>
-          {(orgs.data ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          {(orgs.data ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </label>
       <span className="label">Chế độ QR truy xuất</span>
@@ -211,7 +203,7 @@ function EditProduct({ product, onClose }: { product: any; onClose: () => void }
       <span className="label">Flow truy xuất (một flow)</span>
       {flows.isLoading ? <Spinner /> : (
         <div className="flex flex-col gap-2.5">
-          {(flows.data ?? []).map((f: any) => {
+          {(flows.data ?? []).map((f) => {
             const on = flowId === f.id;
             return (
               <button key={f.id} className={`opt ${on ? 'sel' : ''}`} onClick={() => setFlowId(on ? '' : f.id)}>
@@ -244,7 +236,11 @@ function FlowEnterers({ flowId }: { flowId: string }) {
   const perms = useQuery({ queryKey: ['flow-perms', flowId], queryFn: () => api.get(`/flows/${flowId}/permissions`).then((r) => r.data) });
   const search = useQuery({ queryKey: ['users-branch', q], enabled: q.trim().length > 0, queryFn: () => api.get('/users/branch', { params: { q } }).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['flow-perms', flowId] });
-  const add = useMutation({ mutationFn: (userId: string) => api.post(`/flows/${flowId}/permissions`, { userId }), onSuccess: () => { toast('Đã cấp quyền kê khai'); setQ(''); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const add = useApiMutation((userId: string) => api.post(`/flows/${flowId}/permissions`, { userId }), {
+    successMessage: 'Đã cấp quyền kê khai',
+    invalidate: [['flow-perms', flowId]],
+    onSuccess: () => setQ(''),
+  });
   const del = useMutation({ mutationFn: (id: string) => api.delete(`/flow-permissions/${id}`), onSuccess: () => { toast('Đã gỡ'); inv(); } });
   const flowPerms = (perms.data ?? []).filter((p: any) => !p.eventDefinitionId);
   const assigned = new Set(flowPerms.map((p: any) => p.user.id));

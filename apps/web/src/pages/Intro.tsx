@@ -1,6 +1,9 @@
+import type { ComponentType } from 'react';
 import { PageHead } from '../components/ui';
 import { useAuth } from '../lib/auth';
-import { QrCode, GitBranch, Tag, ShieldCheck, Users, Workflow } from 'lucide-react';
+import { QrCode, GitBranch, Tag, ShieldCheck, Users, Workflow } from '../lib/icons';
+
+type IconComponent = ComponentType<{ size?: number }>;
 
 const ROLES = [
   ['Kê khai', 'Nhập dữ liệu cho các sự kiện theo quyền được phân.'],
@@ -20,14 +23,14 @@ export default function Intro() {
   const { user } = useAuth();
   return (
     <div className="max-w-[860px]">
-      <PageHead title="Giới thiệu" subtitle="Nền tảng truy xuất nguồn gốc Vlabel" />
+      <PageHead eyebrow="Vlabel" title="Giới thiệu" subtitle="Nền tảng truy xuất nguồn gốc Vlabel" />
 
       {/* Hero */}
       <div className="card p-6 mb-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg,var(--accent-soft),transparent 70%)' }}>
         <div className="flex items-center gap-3.5">
           <img src="/logo.jpg" alt="Vlabel" className="w-14 h-14 rounded-2xl border" style={{ borderColor: 'var(--border)' }} />
           <div>
-            <b className="text-xl tracking-tight">Vlabel</b>
+            <b className="serif text-2xl tracking-tight">Vlabel</b>
             <div className="text-sm text-[var(--muted)]">Xin chào {user?.fullName}</div>
           </div>
         </div>
@@ -39,12 +42,12 @@ export default function Intro() {
 
       {/* Mô hình */}
       <div className="grid sm:grid-cols-2 gap-3 mb-4">
-        {[
+        {([
           [QrCode, 'QR', 'Mỗi sản phẩm/lô có mã QR dẫn tới trang truy xuất và nhãn điện tử.'],
           [GitBranch, 'Flow & Event', 'Quy trình gồm nhiều sự kiện theo chuẩn GS1 EPCIS: Ai, Ở đâu, Khi nào, Thông tin, Media.'],
           [Tag, 'Nhãn điện tử', 'Nội dung nhãn theo Nghị định 37/2026, chọn nhóm hàng ra đúng trường bắt buộc.'],
           [ShieldCheck, 'Xác thực', 'Người tiêu dùng quét QR xem hành trình đã được xác thực, công khai.'],
-        ].map(([Icon, title, desc]: any, i) => (
+        ] as [IconComponent, string, string][]).map(([Icon, title, desc], i) => (
           <div key={i} className="card p-4 flex gap-3">
             <span className="iconbox"><Icon size={19} /></span>
             <div><b className="text-[14.5px]">{title}</b><p className="text-[13px] text-[var(--muted)] mt-0.5" style={{ lineHeight: 1.55 }}>{desc}</p></div>

@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Check, Loader2, Copy, MapPin, ChevronLeft, ScanLine, Camera, Trash2, Link2, Search, Package, ShieldAlert, ClipboardList, ArrowRight } from 'lucide-react';
+import { Check, Loader2, Copy, MapPin, ChevronLeft, ScanLine, Camera, Trash2, Link2, Search, Package, ShieldAlert, ClipboardList, ArrowRight } from '../lib/icons';
 import { api, apiError, fileUrl } from '../lib/api';
 import { useToast } from '../lib/toast';
 import { useAuth } from '../lib/auth';
-import { Spinner } from '../components/ui';
+import { Spinner, ProgressBar, Row } from '../components/ui';
 import QrScanner from '../components/QrScanner';
+import type { Product, TraceTask, EventDefinition } from '@vlabel/shared';
 
 function nowLocal() {
   const d = new Date();
@@ -48,11 +49,11 @@ export default function Entry() {
   const [scanGtin, setScanGtin] = useState('');
   const [camera, setCamera] = useState(false);
 
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
-  const myTasks = useQuery({ queryKey: ['my-tasks'], queryFn: () => api.get('/trace-tasks', { params: { mine: 1 } }).then((r) => r.data) });
+  const products = useQuery<Product[]>({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const myTasks = useQuery<TraceTask[]>({ queryKey: ['my-tasks'], queryFn: () => api.get('/trace-tasks', { params: { mine: 1 } }).then((r) => r.data) });
   const flowDetail = useQuery({ queryKey: ['flow', flowId], enabled: !!flowId, queryFn: () => api.get(`/flows/${flowId}`).then((r) => r.data) });
   const version = flowDetail.data?.versions?.[0];
-  const events = useQuery({ queryKey: ['entry-events', version?.id], enabled: !!version?.id, queryFn: () => api.get(`/flow-versions/${version.id}/entry-events`).then((r) => r.data) });
+  const events = useQuery<EventDefinition[]>({ queryKey: ['entry-events', version?.id], enabled: !!version?.id, queryFn: () => api.get(`/flow-versions/${version.id}/entry-events`).then((r) => r.data) });
 
   const flowOptions = (product?.flows ?? []).map((x: any) => x.flow);
   const ensureItem = useMutation({ mutationFn: (vars: { productId: string; lot?: string }) => api.post('/traceable-items/ensure', vars).then((r) => r.data), onSuccess: (data) => setItem(data) });
@@ -69,7 +70,7 @@ export default function Entry() {
   const preProductId = sp.get('productId');
   useEffect(() => {
     if (preProductId && !product && products.data) {
-      const p = products.data.find((x: any) => x.id === preProductId);
+      const p = products.data.find((x) => x.id === preProductId);
       if (p) selectProduct(p, sp.get('lot') ?? '');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,8 +139,8 @@ export default function Entry() {
     screen === 'fields' ? requiredOk : true;
   const isLast = screen === 'review';
 
-  const shownProducts = (products.data ?? []).filter((p: any) => !productQ || p.name.toLowerCase().includes(productQ.toLowerCase()) || (p.gtin ?? '').includes(productQ));
-  const openTasks = (myTasks.data ?? []).filter((t: any) => t.status !== 'DONE');
+  const shownProducts = (products.data ?? []).filter((p) => !productQ || p.name.toLowerCase().includes(productQ.toLowerCase()) || (p.gtin ?? '').includes(productQ));
+  const openTasks = (myTasks.data ?? []).filter((t) => t.status !== 'DONE');
 
   if (done) return (
     <div className="min-h-[70vh] grid place-items-center text-center px-6">
@@ -162,9 +163,7 @@ export default function Entry() {
         </div>
         <div className="w-9" />
       </div>
-      <div className="h-2 rounded-full overflow-hidden mb-5" style={{ background: 'var(--surface)' }}>
-        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${((idx + 1) / total) * 100}%`, background: 'linear-gradient(90deg,var(--accent),#7aa0ff)' }} />
-      </div>
+      <div className="mb-5"><ProgressBar value={((idx + 1) / total) * 100} /></div>
 
       <div key={screen} className="anim-in">
         <h2 className="text-[23px] font-extrabold tracking-tight mb-1" style={{ textWrap: 'balance' } as any}>{TITLES[screen]}</h2>
@@ -190,14 +189,14 @@ export default function Entry() {
           <div className="card p-3.5" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent)' }}>
             <div className="flex items-center gap-2 mb-2 text-[13px] font-bold" style={{ color: 'var(--accent-ink)' }}><ClipboardList size={16} />Nhiệm vụ của bạn</div>
             <div className="flex flex-col gap-1.5 overflow-y-auto pr-1" style={{ maxHeight: 176 }}>
-              {openTasks.map((t: any) => (
+              {openTasks.map((t) => (
                 <div key={t.id} className="flex items-center gap-2 flex-wrap p-2.5 rounded-xl" style={{ background: 'var(--card)' }}>
                   <div className="flex-1 min-w-[150px]">
                     <b className="text-[13px]">{t.name || t.product?.name}</b>
                     <div className="text-[11px] text-[var(--muted)]">Cần: {t.product?.name}{t.lot ? ` · Lô ${t.lot}` : ''} · hạn {new Date(t.endDate).toLocaleDateString('vi-VN')}</div>
                     {t.note && <div className="text-[11px] text-[var(--ink-2)]">Ghi chú: {t.note}</div>}
                   </div>
-                  <button className="btn btn-sm btn-primary" onClick={() => { const p = (products.data ?? []).find((x: any) => x.id === t.product?.id); if (p) selectProduct(p, t.lot ?? ''); }}>Làm ngay</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => { const p = (products.data ?? []).find((x) => x.id === t.product?.id); if (p) selectProduct(p, t.lot ?? ''); }}>Làm ngay</button>
                 </div>
               ))}
             </div>
@@ -219,7 +218,7 @@ export default function Entry() {
         </div>
         {products.isLoading ? <Spinner /> : (
           <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 268 }}>
-            {shownProducts.map((p: any) => (
+            {shownProducts.map((p) => (
               <button key={p.id} onClick={() => selectProduct(p)} className={`opt ${product?.id === p.id ? 'sel' : ''}`}>
                 <span className="w-9 h-9 rounded-xl grid place-items-center flex-none" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}><Package size={17} /></span>
                 <div className="flex-1"><b className="text-sm">{p.name}</b><div className="text-xs text-[var(--muted)] mono">{p.gtin} · {(p.flows ?? []).length} flow</div></div>
@@ -253,10 +252,10 @@ export default function Entry() {
         {!flowId ? <p className="text-sm text-[var(--muted)]">Chọn flow để tiếp tục.</p>
           : events.isLoading ? <Spinner />
           : noPermission ? <div className="p-4 rounded-xl text-sm flex items-center gap-2 pill-bad"><ShieldAlert size={18} />Bạn chưa được cấp quyền kê khai theo flow này. Liên hệ quản lý.</div>
-          : <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>{(events.data ?? []).map((ev: any) => (
+          : <div className="flex flex-col gap-2 overflow-y-auto pr-1" style={{ maxHeight: 300 }}>{(events.data ?? []).map((ev) => (
             <button key={ev.id} onClick={() => setEvent(ev)} className={`opt ${event?.id === ev.id ? 'sel' : ''}`}>
               <span className="w-8 h-8 rounded-full grid place-items-center flex-none text-[13px] font-bold" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{ev.order}</span>
-              <div className="flex-1"><b className="text-sm">{ev.name}</b><div className="text-xs text-[var(--muted)]">5 yếu tố EPCIS{(ev.fields?.length ?? 0) > 0 ? ` · +${ev.fields.length} trường` : ''}</div></div>
+              <div className="flex-1"><b className="text-sm">{ev.name}</b><div className="text-xs text-[var(--muted)]">5 yếu tố EPCIS{(ev.fields?.length ?? 0) > 0 ? ` · +${ev.fields?.length} trường` : ''}</div></div>
               {event?.id === ev.id && <Check size={18} className="text-[var(--accent)]" />}
             </button>
           ))}</div>}
@@ -266,7 +265,7 @@ export default function Entry() {
     if (screen === 'who') return (
       <div className="flex flex-col gap-2.5">
         {user?.fullName && <button className={`opt ${performerName === user.fullName ? 'sel' : ''}`} onClick={() => setPerformerName(user.fullName)}>
-          <span className="w-9 h-9 rounded-full grid place-items-center text-white text-xs font-bold flex-none" style={{ background: 'linear-gradient(135deg,#2F6BFF,#7aa0ff)' }}>{user.fullName.split(' ').slice(-1)[0]?.[0]}</span>
+          <span className="serif w-9 h-9 rounded-full grid place-items-center text-sm font-bold flex-none" style={{ color: 'var(--accent-contrast)', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{user.fullName.split(' ').slice(-1)[0]?.[0]}</span>
           <div className="flex-1"><b className="text-sm">Tôi</b><div className="text-xs text-[var(--muted)]">{user.fullName}</div></div>
           {performerName === user.fullName && <Check size={18} className="text-[var(--accent)]" />}
         </button>}
@@ -333,7 +332,7 @@ export default function Entry() {
     );
 
     if (screen === 'review') return (
-      <div className="card p-4 flex flex-col divide-y" style={{ borderColor: 'var(--border)' }}>
+      <div className="card p-4 flex flex-col rows">
         <Row k="Sản phẩm" v={product?.name} />
         <Row k="GTIN" v={product?.gtin} mono />
         <Row k="Lô / ngày SX" v={lot || '—'} />
@@ -363,6 +362,3 @@ function FieldInput({ field, value, onChange }: { field: any; value: any; onChan
   return <input className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
 }
 
-function Row({ k, v, mono }: { k: string; v: any; mono?: boolean }) {
-  return <div className="flex justify-between gap-4 py-2.5 text-sm"><span className="text-[var(--muted)] flex-none">{k}</span><b className={`text-right ${mono ? 'mono' : ''}`}>{v ?? '—'}</b></div>;
-}

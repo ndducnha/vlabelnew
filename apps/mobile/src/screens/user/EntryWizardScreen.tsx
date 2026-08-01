@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, Image, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../components/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import { WizardShell } from '../../components/WizardShell';
-import { Card, Field, AppText, Pill, Loading, Button } from '../../components/ui';
+import { Card, Field, AppText, Pill, Loading, Button, RowsCard, Row } from '../../components/ui';
+import { useProducts } from '../../lib/queries';
 import { api, apiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { useTheme } from '../../theme';
+import { useTheme, font } from '../../theme';
 import { useToast } from '../../components/Toast';
 import { submitRecord, addPending, PendingRecord } from '../../lib/offline';
 
@@ -19,7 +20,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
   const preProductId: string | undefined = route.params?.productId;
   const preLot: string | undefined = route.params?.lot;
 
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const products = useProducts();
   const [productId, setProductId] = useState<string | undefined>(preProductId);
   const [lot, setLot] = useState(preLot ?? '');
   const [flowId, setFlowId] = useState('');
@@ -32,8 +33,8 @@ export default function EntryWizardScreen({ route, navigation }: any) {
   const [media, setMedia] = useState<{ uri: string }[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const product = (products.data ?? []).find((p: any) => p.id === productId);
-  const flows = (product?.flows ?? []).map((x: any) => x.flow);
+  const product = (products.data ?? []).find((p) => p.id === productId);
+  const flows = (product?.flows ?? []).map((x) => x.flow);
   const effFlowId = flowId || (flows.length === 1 ? flows[0].id : '');
   const flowDetail = useQuery({ queryKey: ['flow', effFlowId], enabled: !!effFlowId, queryFn: () => api.get(`/flows/${effFlowId}`).then((r) => r.data) });
   const version = flowDetail.data?.versions?.[0];
@@ -49,7 +50,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
   const step = steps[Math.min(idx, steps.length - 1)];
   const total = steps.length;
 
-  const TITLES: Record<string, string> = { product: 'Sản phẩm / lô', flow: 'Chọn Flow', event: 'Chọn công đoạn', who: 'Ai thực hiện?', location: 'Thực hiện ở đâu?', activity: 'Đã làm gì?', fields: 'Thông tin khai báo', media: 'Hình ảnh / minh chứng', review: 'Xem lại & gửi' };
+  const TITLES: Record<string, string> = { product: 'Sản phẩm / lô', flow: 'Chọn quy trình', event: 'Chọn công đoạn', who: 'Ai thực hiện?', location: 'Thực hiện ở đâu?', activity: 'Đã làm gì?', fields: 'Thông tin khai báo', media: 'Hình ảnh / minh chứng', review: 'Xem lại & gửi' };
 
   const requiredOk = (event?.fields ?? []).filter((f: any) => f.required).every((f: any) => values[f.key] !== undefined && values[f.key] !== '');
   const canNext =
@@ -80,7 +81,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
     try {
       await submitRecord(rec);
       qc.invalidateQueries({ queryKey: ['trace-tasks'] });
-      toast('✅ Đã gửi khai báo');
+      toast('Đã gửi khai báo');
       navigation.goBack();
     } catch (e: any) {
       if (e?.message === 'Network Error') {
@@ -102,27 +103,27 @@ export default function EntryWizardScreen({ route, navigation }: any) {
         <View>
           {products.isLoading ? <Loading /> : (
             <ScrollView style={{ maxHeight: 320 }}>
-              {(products.data ?? []).map((p: any) => (
+              {(products.data ?? []).map((p) => (
                 <Card key={p.id} onPress={() => { setProductId(p.id); setFlowId(''); setEvent(null); }} style={{ marginBottom: 8, borderColor: productId === p.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Ionicons name="cube-outline" size={20} color={t.accent} />
-                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontWeight: '700' }}>{p.name}</Text><Text style={{ color: t.muted, fontSize: 12 }}>{p.gtin} · {(p.flows ?? []).length} flow</Text></View>
-                  {productId === p.id && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+                  <Icon name="cube-outline" size={20} color={t.accent} />
+                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{p.name}</Text><Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{p.gtin} · {(p.flows ?? []).length} flow</Text></View>
+                  {productId === p.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
                 </Card>
               ))}
             </ScrollView>
           )}
           <Field label="Lô / ngày sản xuất" value={lot} onChangeText={setLot} placeholder="VD: LOT-2408-01" />
-          {product && flows.length === 0 && <Pill label="Sản phẩm chưa gán Flow" tone="warn" />}
+          {product && flows.length === 0 && <Pill label="Sản phẩm chưa gán quy trình" tone="warn" />}
         </View>
       )}
 
       {step === 'flow' && (
         <View style={{ gap: 8 }}>
-          {flows.map((f: any) => (
+          {flows.map((f) => (
             <Card key={f.id} onPress={() => { setFlowId(f.id); setEvent(null); }} style={{ borderColor: effFlowId === f.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Ionicons name="git-branch-outline" size={18} color={t.accent} />
-              <Text style={{ flex: 1, color: t.ink, fontWeight: '700' }}>{f.name}</Text>
-              {effFlowId === f.id && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+              <Icon name="git-branch-outline" size={18} color={t.accent} />
+              <Text style={{ flex: 1, color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{f.name}</Text>
+              {effFlowId === f.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
             </Card>
           ))}
         </View>
@@ -130,13 +131,13 @@ export default function EntryWizardScreen({ route, navigation }: any) {
 
       {step === 'event' && (
         events.isLoading ? <Loading /> :
-          (events.data ?? []).length === 0 ? <Card><AppText muted>Bạn chưa được cấp quyền kê khai công đoạn nào của Flow này.</AppText></Card> :
+          (events.data ?? []).length === 0 ? <Card><AppText muted>Bạn chưa được cấp quyền kê khai công đoạn nào của quy trình này.</AppText></Card> :
             <View style={{ gap: 8 }}>
               {(events.data ?? []).map((ev: any) => (
                 <Card key={ev.id} onPress={() => setEvent(ev)} style={{ borderColor: event?.id === ev.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: t.accent, fontWeight: '800' }}>{ev.order}</Text></View>
-                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontWeight: '700' }}>{ev.name}</Text>{(ev.fields?.length ?? 0) > 0 && <Text style={{ color: t.muted, fontSize: 12 }}>+{ev.fields.length} trường</Text>}</View>
-                  {event?.id === ev.id && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+                  <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: t.accentSoft, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: t.accent, fontFamily: font.serifBold, fontSize: 14 }}>{ev.order}</Text></View>
+                  <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{ev.name}</Text>{(ev.fields?.length ?? 0) > 0 && <Text style={{ color: t.muted, fontFamily: font.body, fontSize: 12, marginTop: 1 }}>+{ev.fields.length} trường</Text>}</View>
+                  {event?.id === ev.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
                 </Card>
               ))}
             </View>
@@ -164,7 +165,7 @@ export default function EntryWizardScreen({ route, navigation }: any) {
             {media.map((m, i) => (
               <View key={i} style={{ position: 'relative' }}>
                 <Image source={{ uri: m.uri }} style={{ width: 84, height: 84, borderRadius: 12 }} />
-                <Pressable onPress={() => setMedia(media.filter((_, j) => j !== i))} style={{ position: 'absolute', top: -6, right: -6, backgroundColor: t.danger, borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="close" size={13} color="#fff" /></Pressable>
+                <Pressable onPress={() => setMedia(media.filter((_, j) => j !== i))} style={{ position: 'absolute', top: -6, right: -6, backgroundColor: t.danger, borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}><Icon name="close" size={13} color="#fff" /></Pressable>
               </View>
             ))}
           </View>
@@ -172,15 +173,14 @@ export default function EntryWizardScreen({ route, navigation }: any) {
         </View>
       )}
 
-      {step === 'review' && (
-        <Card>
-          {[['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Lô', lot || '—'], ['Công đoạn', event?.name], ['Người thực hiện', performer], ['Địa điểm', location || '—'], ['Hành động', action || '—'], ['Ảnh', `${media.length} tệp`]].map(([k, v]) => (
-            <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border }}>
-              <Text style={{ color: t.muted }}>{k}</Text><Text style={{ color: t.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{String(v ?? '—')}</Text>
-            </View>
-          ))}
-        </Card>
-      )}
+      {step === 'review' && (() => {
+        const rows: [string, any][] = [['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Lô', lot || '—'], ['Công đoạn', event?.name], ['Người thực hiện', performer], ['Địa điểm', location || '—'], ['Hành động', action || '—'], ['Ảnh', `${media.length} tệp`]];
+        return (
+          <RowsCard>
+            {rows.map(([k, v], i) => <Row key={k} label={k} value={String(v ?? '—')} last={i === rows.length - 1} />)}
+          </RowsCard>
+        );
+      })()}
     </WizardShell>
   );
 }

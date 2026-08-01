@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { apiError } from '../lib/api';
-import { Loader2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Loader2, ShieldCheck, ArrowRight } from '../lib/icons';
 
 const DEMO = [
   { label: 'Superadmin', email: 'superadmin@vlabel.vn' },
@@ -37,14 +37,14 @@ export default function Login() {
       <div className="w-full max-w-[420px] anim-in">
         {/* Brand */}
         <div className="flex flex-col items-center text-center mb-7">
-          <img src="/logo.jpg" alt="Vlabel" className="w-14 h-14 rounded-2xl border shadow-sm mb-3.5" style={{ borderColor: 'var(--border)', boxShadow: 'var(--shadow-md)' }} />
-          <b className="text-2xl tracking-tight leading-none">Vlabel</b>
-          <div className="mt-1.5 text-[12px] font-semibold text-[var(--muted)]">Chuẩn hóa dữ liệu, số hóa niềm tin.</div>
+          <img src="/logo.jpg" alt="Vlabel" className="w-14 h-14 rounded-2xl border mb-4" style={{ borderColor: 'var(--border)', boxShadow: 'var(--shadow-md)' }} />
+          <b className="serif text-[34px] leading-none">Vlabel</b>
+          <span className="eyebrow mt-3">Chuẩn hóa dữ liệu · Số hóa niềm tin</span>
         </div>
 
         {/* Form card */}
         <form onSubmit={submit} className="card p-6 sm:p-7">
-          <h1 className="text-xl font-bold tracking-tight">Đăng nhập</h1>
+          <h1 className="serif text-2xl font-bold">Đăng nhập</h1>
           <p className="text-sm text-[var(--muted)] mt-1 mb-6">Truy cập không gian làm việc của bạn.</p>
 
           <label className="block mb-4">

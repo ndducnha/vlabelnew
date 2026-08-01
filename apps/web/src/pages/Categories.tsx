@@ -1,27 +1,25 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
-import { api, apiError } from '../lib/api';
-import { useToast } from '../lib/toast';
-import { PageHead, Spinner } from '../components/ui';
+import { Plus, Trash2 } from '../lib/icons';
+import { api } from '../lib/api';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, EmptyState } from '../components/ui';
 import { FIELD_TYPES } from '@vlabel/shared';
 
 export default function Categories() {
-  const toast = useToast();
   const qc = useQueryClient();
   const list = useQuery({ queryKey: ['categories'], queryFn: () => api.get('/categories').then((r) => r.data) });
   const [newCat, setNewCat] = useState({ name: '', code: '' });
   const [field, setField] = useState<Record<string, { key: string; label: string; type: string; required: boolean; publicVisible: boolean }>>({});
 
-  const createCat = useMutation({
-    mutationFn: () => api.post('/categories', newCat),
-    onSuccess: () => { toast('Đã tạo danh mục'); setNewCat({ name: '', code: '' }); qc.invalidateQueries({ queryKey: ['categories'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const createCat = useApiMutation(() => api.post('/categories', newCat), {
+    successMessage: 'Đã tạo danh mục',
+    invalidate: [['categories']],
+    onSuccess: () => setNewCat({ name: '', code: '' }),
   });
-  const addField = useMutation({
-    mutationFn: ({ id, f }: { id: string; f: any }) => api.post(`/categories/${id}/fields`, f),
-    onSuccess: () => { toast('Đã thêm field'); qc.invalidateQueries({ queryKey: ['categories'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const addField = useApiMutation(({ id, f }: { id: string; f: any }) => api.post(`/categories/${id}/fields`, f), {
+    successMessage: 'Đã thêm field',
+    invalidate: [['categories']],
   });
   const delField = useMutation({
     mutationFn: (fid: string) => api.delete(`/categories/fields/${fid}`),
@@ -32,20 +30,22 @@ export default function Categories() {
 
   return (
     <>
-      <PageHead title="Danh mục & field động" subtitle="Cấu hình field động cho từng danh mục sản phẩm" />
-      <div className="card p-4 mb-4 flex flex-wrap gap-2 items-end">
+      <PageHead eyebrow="Danh mục" title="Danh mục & field động" subtitle="Cấu hình field động cho từng danh mục sản phẩm" />
+      <div className="card p-4 mb-5 flex flex-wrap gap-2 items-end">
         <label className="block"><span className="label">Tên danh mục</span><input className="input" value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} placeholder="Rau củ" /></label>
         <label className="block"><span className="label">Mã</span><input className="input mono" value={newCat.code} onChange={(e) => setNewCat({ ...newCat, code: e.target.value })} placeholder="RAU-CU" /></label>
         <button className="btn btn-primary" disabled={!newCat.name || !newCat.code || createCat.isPending} onClick={() => createCat.mutate()}><Plus size={16} />Thêm danh mục</button>
       </div>
 
-      {list.isLoading ? <Spinner /> : (
+      {list.isLoading ? <Spinner /> : (list.data?.length ?? 0) === 0 ? (
+        <div className="card"><EmptyState title="Chưa có danh mục" hint="Tạo danh mục đầu tiên bằng biểu mẫu phía trên." /></div>
+      ) : (
         <div className="flex flex-col gap-4">
           {(list.data ?? []).map((c: any) => (
             <div key={c.id} className="card p-5">
               <div className="flex items-center gap-2 mb-3">
                 <b className="text-base">{c.name}</b><span className="chip mono">{c.code}</span>
-                <span className="text-xs text-[var(--muted)]">{c._count?.products ?? 0} sản phẩm</span>
+                <span className="text-xs text-[var(--muted)]"><span className="num">{c._count?.products ?? 0}</span> sản phẩm</span>
               </div>
               <div className="flex flex-col gap-2 mb-3">
                 {(c.fields ?? []).map((fl: any) => (

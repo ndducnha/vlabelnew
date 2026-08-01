@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { UserPlus, Loader2, GitBranch, Search, Check, Mail, Building2 } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { UserPlus, Loader2, GitBranch, Search, Check, Mail, Building2 } from '../lib/icons';
+import { api } from '../lib/api';
 import { useToast } from '../lib/toast';
+import { useApiMutation } from '../lib/useApiMutation';
 import { PageHead, Spinner, Drawer, Avatar, EmptyState, Paginator, usePaged } from '../components/ui';
+import type { Organization, Flow } from '@vlabel/shared';
 
 export default function Users() {
-  const toast = useToast();
-  const qc = useQueryClient();
   const users = useQuery({ queryKey: ['users'], queryFn: () => api.get('/users').then((r) => r.data) });
   const roles = useQuery({ queryKey: ['roles'], queryFn: () => api.get('/users/roles').then((r) => r.data) });
-  const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
+  const orgs = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
 
   const [open, setOpen] = useState(false);
   const [flowUser, setFlowUser] = useState<any | null>(null);
@@ -19,17 +19,17 @@ export default function Users() {
   const paged = usePaged<any>(users.data ?? [], (u, ql) => u.fullName.toLowerCase().includes(ql) || (u.email ?? '').toLowerCase().includes(ql), q, page);
   const [form, setForm] = useState({ email: '', fullName: '', password: 'Vlabel@123', organizationId: '', roleKeys: [] as string[] });
 
-  const create = useMutation({
-    mutationFn: () => api.post('/users', { ...form, organizationId: form.organizationId || undefined }),
-    onSuccess: () => { toast('✅ Đã tạo người dùng'); setOpen(false); setForm({ email: '', fullName: '', password: 'Vlabel@123', organizationId: '', roleKeys: [] }); qc.invalidateQueries({ queryKey: ['users'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const create = useApiMutation(() => api.post('/users', { ...form, organizationId: form.organizationId || undefined }), {
+    successMessage: '✅ Đã tạo người dùng',
+    invalidate: [['users']],
+    onSuccess: () => { setOpen(false); setForm({ email: '', fullName: '', password: 'Vlabel@123', organizationId: '', roleKeys: [] }); },
   });
 
   const toggleRole = (k: string) => setForm((f) => ({ ...f, roleKeys: f.roleKeys.includes(k) ? f.roleKeys.filter((x) => x !== k) : [...f.roleKeys, k] }));
 
   return (
     <>
-      <PageHead title="Người dùng & phân quyền" subtitle={`${users.data?.length ?? 0} người dùng`}
+      <PageHead eyebrow="Phân quyền" title="Người dùng & phân quyền" subtitle={`${users.data?.length ?? 0} người dùng`}
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -44,8 +44,8 @@ export default function Users() {
             action={<button className="btn btn-primary" onClick={() => setOpen(true)}><UserPlus size={16} />Mời người dùng</button>} />
         </div>
       ) : (
-        <div className="flex flex-col gap-2.5 anim-in">
-          {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy người dùng phù hợp.</p>}
+        <div className="flex flex-col gap-3 anim-in">
+          {paged.total === 0 && <div className="card"><EmptyState title="Không tìm thấy người dùng phù hợp." hint="Thử tìm theo tên hoặc email khác." /></div>}
           {paged.rows.map((u: any) => (
             <div key={u.id} className="card card-hover p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-3 min-w-0 sm:w-[240px] sm:flex-none">
@@ -89,7 +89,7 @@ export default function Users() {
         <label className="block mb-4"><span className="label">Đơn vị</span>
           <select className="input" value={form.organizationId} onChange={(e) => setForm({ ...form, organizationId: e.target.value })}>
             <option value="">Không gán</option>
-            {(orgs.data ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            {(orgs.data ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
           </select></label>
         <span className="label">Vai trò</span>
         <div className="flex flex-wrap gap-2">
@@ -115,13 +115,16 @@ function UserFlows({ user, onClose }: { user: any; onClose: () => void }) {
   const toast = useToast();
   const qc = useQueryClient();
   const [q, setQ] = useState('');
-  const flows = useQuery({ queryKey: ['flows'], queryFn: () => api.get('/flows').then((r) => r.data) });
+  const flows = useQuery<Flow[]>({ queryKey: ['flows'], queryFn: () => api.get('/flows').then((r) => r.data) });
   const perms = useQuery({ queryKey: ['user-flows', user.id], queryFn: () => api.get(`/users/${user.id}/flow-permissions`).then((r) => r.data) });
   const inv = () => qc.invalidateQueries({ queryKey: ['user-flows', user.id] });
-  const add = useMutation({ mutationFn: (flowId: string) => api.post(`/flows/${flowId}/permissions`, { userId: user.id }), onSuccess: () => { toast('Đã cấp quyền'); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const add = useApiMutation((flowId: string) => api.post(`/flows/${flowId}/permissions`, { userId: user.id }), {
+    successMessage: 'Đã cấp quyền',
+    invalidate: [['user-flows', user.id]],
+  });
   const del = useMutation({ mutationFn: (permId: string) => api.delete(`/flow-permissions/${permId}`), onSuccess: () => { toast('Đã gỡ'); inv(); } });
   const permByFlow = new Map((perms.data ?? []).map((p: any) => [p.flow.id, p]));
-  const shown = (flows.data ?? []).filter((f: any) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
+  const shown = (flows.data ?? []).filter((f) => !q || f.name.toLowerCase().includes(q.toLowerCase()));
 
   return (
     <Drawer open onClose={onClose}
@@ -139,7 +142,7 @@ function UserFlows({ user, onClose }: { user: any; onClose: () => void }) {
       </div>
       {flows.isLoading ? <Spinner /> : (
         <div className="flex flex-col gap-2">
-          {shown.map((f: any) => {
+          {shown.map((f) => {
             const perm = permByFlow.get(f.id) as any;
             return (
               <div key={f.id} className="card card-hover flex items-center gap-3 p-3">

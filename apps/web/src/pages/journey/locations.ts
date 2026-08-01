@@ -6,7 +6,7 @@ export interface Loc {
 }
 
 export const LOC_TYPES: Record<string, { label: string; color: string }> = {
-  factory: { label: 'Nhà máy', color: '#2E5BE8' },
+  factory: { label: 'Nhà máy', color: '#14486F' },
   warehouse: { label: 'Kho', color: '#0E9AA7' },
   qc: { label: 'Trung tâm QC', color: '#D97706' },
   branch: { label: 'Chi nhánh', color: '#7C3AED' },

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { WizardShell } from '../../components/WizardShell';
-import { Card, Field, AppText } from '../../components/ui';
+import { Card, Field, AppText, RowsCard, Row } from '../../components/ui';
+import { useProducts } from '../../lib/queries';
 import { api, apiError } from '../../lib/api';
-import { useTheme } from '../../theme';
+import { useTheme, font } from '../../theme';
 import { useToast } from '../../components/Toast';
 
 const SCOPES: [string, string][] = [['ALL', 'Toàn bộ GTIN'], ['BATCH', 'Theo lô'], ['PRODUCTION', 'Theo ngày sản xuất'], ['ITEM', 'Theo serial']];
@@ -15,14 +16,14 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
   const t = useTheme();
   const toast = useToast();
   const qc = useQueryClient();
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const products = useProducts();
   const [pq, setPq] = useState('');
   const [productId, setProductId] = useState('');
   const [idx, setIdx] = useState(0);
   const [busy, setBusy] = useState(false);
   const [f, setF] = useState<any>({ name: 'Nhãn phụ tiếng Việt', scope: 'ALL', batchCode: '', mfgDate: '', serial: '', content: '' });
 
-  const product = (products.data ?? []).find((p: any) => p.id === productId);
+  const product = (products.data ?? []).find((p) => p.id === productId);
   const steps = ['product', 'scope', 'content', 'review'];
   const step = steps[idx]; const total = steps.length;
   const TITLES: Record<string, string> = { product: 'Chọn sản phẩm', scope: 'Phạm vi áp dụng', content: 'Nội dung nhãn phụ', review: 'Xem lại & phát hành' };
@@ -34,7 +35,7 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
       const { data } = await api.post('/supplementary-labels', payload());
       if (status === 'published') await api.post(`/supplementary-labels/${data.id}/status`, { status: 'published' });
     },
-    onSuccess: (_d, status) => { qc.invalidateQueries({ queryKey: ['supp'] }); toast(status === 'published' ? '✅ Đã phát hành nhãn phụ' : 'Đã lưu nháp'); onClose(); },
+    onSuccess: (_d, status) => { qc.invalidateQueries({ queryKey: ['supp'] }); toast(status === 'published' ? 'Đã phát hành nhãn phụ' : 'Đã lưu nháp'); onClose(); },
     onError: (e) => toast(apiError(e), false),
   });
 
@@ -42,7 +43,7 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
   const goBack = () => { if (idx === 0) onClose(); else setIdx((i) => i - 1); };
   const goNext = () => { if (step === 'review') { setBusy(true); run.mutate('published', { onSettled: () => setBusy(false) }); } else setIdx((i) => i + 1); };
   const set = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }));
-  const shownP = (products.data ?? []).filter((p: any) => !pq || p.name.toLowerCase().includes(pq.toLowerCase()) || (p.gtin ?? '').includes(pq));
+  const shownP = (products.data ?? []).filter((p) => !pq || p.name.toLowerCase().includes(pq.toLowerCase()) || (p.gtin ?? '').includes(pq));
 
   return (
     <WizardShell title={TITLES[step]} step={idx + 1} total={total} onBack={goBack} onNext={goNext} nextLabel={step === 'review' ? 'Phát hành' : 'Tiếp tục'} nextDisabled={!canNext} busy={busy} onDraft={idx === 2 || idx === 3 ? () => run.mutate('draft') : undefined}>
@@ -51,11 +52,11 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
         <View>
           <Field value={pq} onChangeText={setPq} placeholder="Tìm tên / GTIN…" />
           <ScrollView style={{ maxHeight: 400 }}>
-            {shownP.map((p: any) => (
+            {shownP.map((p) => (
               <Card key={p.id} onPress={() => setProductId(p.id)} style={{ marginBottom: 8, borderColor: productId === p.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="document-text-outline" size={18} color={t.accent} />
-                <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontWeight: '700' }}>{p.name}</Text><Text style={{ color: t.muted, fontSize: 12 }}>{p.gtin}</Text></View>
-                {productId === p.id && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+                <Icon name="document-text-outline" size={18} color={t.accent} />
+                <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{p.name}</Text><Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{p.gtin}</Text></View>
+                {productId === p.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
               </Card>
             ))}
           </ScrollView>
@@ -67,9 +68,9 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
           <View style={{ gap: 8 }}>
             {SCOPES.map(([v, l]) => (
               <Card key={v} onPress={() => set('scope', v)} style={{ borderColor: f.scope === v ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="layers-outline" size={17} color={t.accent} />
-                <Text style={{ flex: 1, color: t.ink, fontWeight: '700' }}>{l}</Text>
-                {f.scope === v && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+                <Icon name="layers-outline" size={17} color={t.accent} />
+                <Text style={{ flex: 1, color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{l}</Text>
+                {f.scope === v && <Icon name="checkmark-circle" size={20} color={t.accent} />}
               </Card>
             ))}
           </View>
@@ -81,23 +82,22 @@ export default function SuppWizard({ onClose }: { onClose: () => void }) {
       {step === 'content' && (
         <View>
           <Card onPress={() => set('content', TEMPLATE)} style={{ marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Ionicons name="sparkles-outline" size={16} color={t.accent} /><Text style={{ color: t.accent, fontWeight: '700' }}>Chèn mẫu nội dung</Text>
+            <Icon name="sparkles-outline" size={16} color={t.accent} /><Text style={{ color: t.accent, fontFamily: font.semibold, fontSize: 14 }}>Chèn mẫu nội dung</Text>
           </Card>
           <Field label="Nội dung (mỗi dòng một ý)" value={f.content} onChangeText={(v) => set('content', v)} multiline autoCapitalize="sentences" />
           <AppText muted>Nội dung hiển thị dạng trang web trên cùng mã QR của sản phẩm.</AppText>
         </View>
       )}
-      {step === 'review' && (
-        <Card>
-          {[['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Tên nhãn', f.name], ['Phạm vi', SCOPES.find(([v]) => v === f.scope)?.[1] + (f.scope === 'BATCH' ? ` · ${f.batchCode}` : '')]].map(([k, v]) => (
-            <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border }}>
-              <Text style={{ color: t.muted }}>{k}</Text><Text style={{ color: t.ink, fontWeight: '700' }}>{String(v ?? '—')}</Text>
-            </View>
-          ))}
-          <Text style={{ color: t.ink2, fontWeight: '700', marginTop: 10, marginBottom: 4 }}>Xem trước nội dung:</Text>
-          <Text style={{ color: t.ink2, fontSize: 13 }}>{f.content.slice(0, 300)}{f.content.length > 300 ? '…' : ''}</Text>
-        </Card>
-      )}
+      {step === 'review' && (() => {
+        const rows: [string, any][] = [['Sản phẩm', product?.name], ['GTIN', product?.gtin], ['Tên nhãn', f.name], ['Phạm vi', SCOPES.find(([v]) => v === f.scope)?.[1] + (f.scope === 'BATCH' ? ` · ${f.batchCode}` : '')]];
+        return (
+          <RowsCard>
+            {rows.map(([k, v], i) => <Row key={k} label={k} value={String(v ?? '—')} last={i === rows.length - 1} />)}
+            <Text style={{ color: t.ink2, fontFamily: font.semibold, fontSize: 13, marginTop: 12, marginBottom: 5 }}>Xem trước nội dung</Text>
+            <Text style={{ color: t.muted, fontFamily: font.body, fontSize: 12.5, lineHeight: 18, marginBottom: 4 }}>{f.content.slice(0, 300)}{f.content.length > 300 ? '…' : ''}</Text>
+          </RowsCard>
+        );
+      })()}
     </WizardShell>
   );
 }

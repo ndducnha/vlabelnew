@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   Info, Network, Package, GitBranch, ClipboardEdit,
   CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles, LayoutList, Route as RouteIcon,
-} from 'lucide-react';
+} from '../lib/icons';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { PERMISSIONS } from '@vlabel/shared';
@@ -72,14 +72,14 @@ export default function Layout() {
         <div className="flex items-center gap-2.5 px-2 pt-2 pb-3.5">
           <img src="/logo.jpg" alt="Vlabel" className="w-8 h-8 rounded-[9px] border" style={{ borderColor: 'var(--border)' }} />
           <div>
-            <b className="text-base tracking-tight">Vlabel</b>
-            <div className="text-[11px] font-semibold text-[var(--faint)]">Chuẩn hóa dữ liệu, số hóa niềm tin.</div>
+            <b className="serif text-[19px] leading-none">Vlabel</b>
+            <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--faint)] mt-1" style={{ fontFamily: 'var(--mono)' }}>Số hóa niềm tin</div>
           </div>
         </div>
         <nav className="flex flex-col gap-0.5">
           {sections.map((s) => (
             <div key={s.title} className="flex flex-col gap-0.5 mb-1.5">
-              <div className="px-2.5 pt-2.5 pb-1 text-[10.5px] font-bold uppercase tracking-wide text-[var(--faint)]">{s.title}</div>
+              <div className="px-2.5 pt-2.5 pb-1 text-[10px] font-medium uppercase text-[var(--faint)]" style={{ fontFamily: 'var(--mono)', letterSpacing: '1.4px' }}>{s.title}</div>
               {s.items.map((n) => (
                 <NavLink key={n.to} to={n.to} end={n.end}
                   className={({ isActive }) =>
@@ -98,8 +98,8 @@ export default function Layout() {
           {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />} {theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
         </button>
         <div className="flex items-center gap-2.5 p-2 rounded-xl mt-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div className="w-8 h-8 rounded-full grid place-items-center text-white text-xs font-bold"
-            style={{ background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{initials(user?.fullName ?? '')}</div>
+          <div className="serif w-8 h-8 rounded-full grid place-items-center text-sm font-bold"
+            style={{ color: 'var(--accent-contrast)', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{initials(user?.fullName ?? '')}</div>
           <div className="flex-1 min-w-0">
             <b className="block text-[13.5px] truncate">{user?.fullName}</b>
             <span className="text-[11.5px] text-[var(--muted)]">{user?.roles?.[0]}</span>
@@ -114,7 +114,7 @@ export default function Layout() {
         <div className="md:hidden flex items-center gap-3 h-14 px-4 sticky top-0 z-30"
           style={{ background: 'color-mix(in srgb,var(--bg) 85%,transparent)', backdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)' }}>
           <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-lg border" style={{ borderColor: 'var(--border)' }} />
-          <b className="text-base">Vlabel</b>
+          <b className="serif text-lg">Vlabel</b>
           <div className="flex-1" />
           <button onClick={toggleTheme} className="btn btn-ghost btn-sm">{theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>
         </div>

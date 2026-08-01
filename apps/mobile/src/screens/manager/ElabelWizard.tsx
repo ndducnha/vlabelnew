@@ -1,11 +1,12 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Icon } from '../../components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { WizardShell } from '../../components/WizardShell';
-import { Card, Field, AppText, Loading } from '../../components/ui';
+import { Card, Field, AppText, Loading, RowsCard, Row } from '../../components/ui';
+import { useProducts } from '../../lib/queries';
 import { api, apiError } from '../../lib/api';
-import { useTheme } from '../../theme';
+import { useTheme, font } from '../../theme';
 import { useToast } from '../../components/Toast';
 
 const RISK = ['Chưa xác định', 'Cao', 'Trung bình', 'Thấp'];
@@ -14,7 +15,7 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
   const t = useTheme();
   const toast = useToast();
   const qc = useQueryClient();
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const products = useProducts();
   const [productId, setProductId] = useState('');
   const [pq, setPq] = useState('');
   const [idx, setIdx] = useState(0);
@@ -30,7 +31,7 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail.data, productId]);
 
-  const product = (products.data ?? []).find((p: any) => p.id === productId);
+  const product = (products.data ?? []).find((p) => p.id === productId);
   const steps = ['product', 'basic', 'owner', 'content', 'usage', 'safety', 'origin', 'review'];
   const step = steps[idx]; const total = steps.length;
   const TITLES: Record<string, string> = { product: 'Chọn sản phẩm', basic: 'Tên & nhãn hiệu', owner: 'Doanh nghiệp', content: 'Thành phần & định lượng', usage: 'Công dụng & bảo quản', safety: 'Cảnh báo & rủi ro', origin: 'Xuất xứ', review: 'Xem lại & phát hành' };
@@ -43,7 +44,7 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
   });
   const save = async () => { await api.patch(`/elabels/${productId}`, savePayload()); };
   const draft = useMutation({ mutationFn: save, onSuccess: () => { qc.invalidateQueries({ queryKey: ['elabels'] }); toast('Đã lưu nháp nhãn'); }, onError: (e) => toast(apiError(e), false) });
-  const publish = useMutation({ mutationFn: async () => { await save(); await api.post(`/elabels/${productId}/status`, { status: 'published' }); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ['elabels'] }); toast('✅ Đã phát hành nhãn'); onClose(); }, onError: (e) => toast(apiError(e), false) });
+  const publish = useMutation({ mutationFn: async () => { await save(); await api.post(`/elabels/${productId}/status`, { status: 'published' }); }, onSuccess: () => { qc.invalidateQueries({ queryKey: ['elabels'] }); toast('Đã phát hành nhãn'); onClose(); }, onError: (e) => toast(apiError(e), false) });
 
   const canNext = step === 'product' ? !!productId : step === 'basic' ? !!f?.name?.trim() : true;
   const goBack = () => { if (idx === 0) onClose(); else setIdx((i) => i - 1); };
@@ -51,7 +52,7 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
   const set = (k: string, v: any) => setF((s: any) => ({ ...s, [k]: v }));
   const setOwner = (k: string, v: any) => setF((s: any) => ({ ...s, owner: { ...s.owner, [k]: v } }));
 
-  const shownP = (products.data ?? []).filter((p: any) => !pq || p.name.toLowerCase().includes(pq.toLowerCase()) || (p.gtin ?? '').includes(pq));
+  const shownP = (products.data ?? []).filter((p) => !pq || p.name.toLowerCase().includes(pq.toLowerCase()) || (p.gtin ?? '').includes(pq));
 
   return (
     <WizardShell title={TITLES[step]} step={idx + 1} total={total} onBack={goBack} onNext={goNext} nextLabel={step === 'review' ? 'Phát hành nhãn' : 'Tiếp tục'} nextDisabled={!canNext} busy={busy} onDraft={idx >= 1 && idx <= 6 ? () => draft.mutate() : undefined}>
@@ -60,11 +61,11 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
         <View>
           <Field value={pq} onChangeText={setPq} placeholder="Tìm tên / GTIN…" />
           <ScrollView style={{ maxHeight: 400 }}>
-            {shownP.map((p: any) => (
+            {shownP.map((p) => (
               <Card key={p.id} onPress={() => { setProductId(p.id); }} style={{ marginBottom: 8, borderColor: productId === p.id ? t.accent : t.border, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                <Ionicons name="pricetag-outline" size={18} color={t.accent} />
-                <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontWeight: '700' }}>{p.name}</Text><Text style={{ color: t.muted, fontSize: 12 }}>{p.gtin}</Text></View>
-                {productId === p.id && <Ionicons name="checkmark-circle" size={20} color={t.accent} />}
+                <Icon name="pricetag-outline" size={18} color={t.accent} />
+                <View style={{ flex: 1 }}><Text style={{ color: t.ink, fontFamily: font.semibold, fontSize: 14.5 }}>{p.name}</Text><Text style={{ color: t.muted, fontFamily: font.mono, fontSize: 11.5, marginTop: 2 }}>{p.gtin}</Text></View>
+                {productId === p.id && <Icon name="checkmark-circle" size={20} color={t.accent} />}
               </Card>
             ))}
           </ScrollView>
@@ -79,27 +80,29 @@ export default function ElabelWizard({ onClose }: { onClose: () => void }) {
           {step === 'safety' && (
             <>
               <Field label="Cảnh báo an toàn" value={f.safetyWarnings} onChangeText={(v) => set('safetyWarnings', v)} multiline autoCapitalize="sentences" />
-              <Text style={{ color: t.ink2, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>Mức rủi ro</Text>
+              <Text style={{ color: t.ink2, fontFamily: font.semibold, fontSize: 12.5, marginBottom: 8 }}>Mức rủi ro</Text>
               <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {RISK.map((r, i) => (
-                  <Card key={i} onPress={() => set('riskLevel', i)} style={{ paddingVertical: 8, paddingHorizontal: 12, borderColor: Number(f.riskLevel) === i ? t.accent : t.border }}>
-                    <Text style={{ color: Number(f.riskLevel) === i ? t.accent : t.ink, fontWeight: '700' }}>{r}</Text>
-                  </Card>
-                ))}
+                {RISK.map((r, i) => {
+                  const on = Number(f.riskLevel) === i;
+                  return (
+                    <Card key={i} onPress={() => set('riskLevel', i)} elevated={false} style={{ paddingVertical: 9, paddingHorizontal: 13, borderColor: on ? t.accent : t.border, backgroundColor: on ? t.accentSoft : t.card }}>
+                      <Text style={{ color: on ? t.accentInk : t.ink2, fontFamily: on ? font.semibold : font.medium, fontSize: 13 }}>{r}</Text>
+                    </Card>
+                  );
+                })}
               </View>
             </>
           )}
           {step === 'origin' && <Field label="Xuất xứ" value={f.countryOfOrigin} onChangeText={(v) => set('countryOfOrigin', v)} autoCapitalize="words" />}
-          {step === 'review' && (
-            <Card>
-              {[['Tên', f.name], ['Nhãn hiệu', f.brand || '—'], ['Doanh nghiệp', f.owner.name || '—'], ['Định lượng', f.netContent || '—'], ['Rủi ro', RISK[Number(f.riskLevel) || 0]], ['Xuất xứ', f.countryOfOrigin || '—']].map(([k, v]) => (
-                <View key={k} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: t.border }}>
-                  <Text style={{ color: t.muted }}>{k}</Text><Text style={{ color: t.ink, fontWeight: '700', flexShrink: 1, textAlign: 'right' }}>{String(v)}</Text>
-                </View>
-              ))}
-              <AppText muted style={{ marginTop: 10 }}>Phát hành sẽ lưu nội dung và công bố nhãn lên mã QR sản phẩm.</AppText>
-            </Card>
-          )}
+          {step === 'review' && (() => {
+            const rows: [string, any][] = [['Tên', f.name], ['Nhãn hiệu', f.brand || '—'], ['Doanh nghiệp', f.owner.name || '—'], ['Định lượng', f.netContent || '—'], ['Rủi ro', RISK[Number(f.riskLevel) || 0]], ['Xuất xứ', f.countryOfOrigin || '—']];
+            return (
+              <RowsCard>
+                {rows.map(([k, v], i) => <Row key={k} label={k} value={String(v)} last={i === rows.length - 1} />)}
+                <AppText muted style={{ marginTop: 12, marginBottom: 4 }}>Phát hành sẽ lưu nội dung và công bố nhãn lên mã QR sản phẩm.</AppText>
+              </RowsCard>
+            );
+          })()}
         </>
       )}
     </WizardShell>

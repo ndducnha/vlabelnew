@@ -1,49 +1,42 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Plus, Trash2, Tag, Layers, Send, Undo2, ExternalLink, Download, QrCode, Pencil, CheckCircle2, XCircle, Globe, ShieldCheck, Search } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Plus, Trash2, Tag, Layers, Send, Undo2, ExternalLink, Download, QrCode, Pencil, CheckCircle2, XCircle, Globe, ShieldCheck, Search } from '../lib/icons';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, Drawer, Paginator } from '../components/ui';
-import { PERMISSIONS, APPENDIX_GROUPS, appendixGroupByCode } from '@vlabel/shared';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, EmptyState, Drawer, Paginator, statusClsMap } from '../components/ui';
+import type { Product } from '@vlabel/shared';
+import { PERMISSIONS, APPENDIX_GROUPS, appendixGroupByCode, ELABEL_STATUS_LABELS } from '@vlabel/shared';
 
-const STATUS: Record<string, { cls: string; label: string }> = {
-  draft: { cls: 'pill-warn', label: 'Nháp' },
-  published: { cls: 'pill-good', label: 'Đã công bố' },
-  recalled: { cls: 'pill-bad', label: 'Thu hồi' },
-};
+const STATUS = statusClsMap(ELABEL_STATUS_LABELS);
 const RISK = ['Chưa xác định', 'Cao', 'Trung bình', 'Thấp'];
 const PUBLIC_BASE = (import.meta as any).env?.VITE_PUBLIC_BASE ?? window.location.origin;
 
 export default function Elabels() {
   const { can } = useAuth();
-  const toast = useToast();
-  const qc = useQueryClient();
   const canEdit = can(PERMISSIONS.PRODUCT_UPDATE);
   const [status, setStatus] = useState('');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
-  const [edit, setEdit] = useState<any>(null);
-  const [batches, setBatches] = useState<any>(null);
+  const [edit, setEdit] = useState<Product | null>(null);
+  const [batches, setBatches] = useState<Product | null>(null);
   const pageSize = 10;
 
-  const list = useQuery({ queryKey: ['elabels', status], queryFn: () => api.get('/elabels', { params: { status: status || undefined } }).then((r) => r.data) });
-  const inv = () => qc.invalidateQueries({ queryKey: ['elabels'] });
-  const filtered = (list.data ?? []).filter((p: any) => !q || p.name?.toLowerCase().includes(q.toLowerCase()) || (p.gtin ?? '').includes(q));
+  const list = useQuery<Product[]>({ queryKey: ['elabels', status], queryFn: () => api.get('/elabels', { params: { status: status || undefined } }).then((r) => r.data) });
+  const filtered = (list.data ?? []).filter((p) => !q || p.name?.toLowerCase().includes(q.toLowerCase()) || (p.gtin ?? '').includes(q));
   const total = filtered.length;
   const pages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, pages);
   const rows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
-  const setSt = useMutation({
-    mutationFn: ({ id, status, recallReason }: any) => api.post(`/elabels/${id}/status`, { status, recallReason }),
-    onSuccess: (_d, v: any) => { toast(v.status === 'published' ? 'Đã công bố nhãn' : v.status === 'recalled' ? 'Đã thu hồi nhãn' : 'Đã chuyển nháp'); inv(); },
-    onError: (e) => toast(apiError(e), false),
-  });
+  const setSt = useApiMutation(
+    ({ id, status, recallReason }: any) => api.post(`/elabels/${id}/status`, { status, recallReason }),
+    { successMessage: (_d, v: any) => (v.status === 'published' ? 'Đã công bố nhãn' : v.status === 'recalled' ? 'Đã thu hồi nhãn' : 'Đã chuyển nháp'), invalidate: [['elabels']] },
+  );
 
   return (
     <>
-      <PageHead title="Nhãn điện tử" subtitle="Soạn nội dung nhãn, quản lý lô, công bố và sinh QR cho người tiêu dùng quét"
+      <PageHead eyebrow="Nhãn hàng hóa" title="Nhãn điện tử" subtitle="Soạn nội dung nhãn, quản lý lô, công bố và sinh QR cho người tiêu dùng quét"
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -69,8 +62,8 @@ export default function Elabels() {
                 <th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide">Lô</th><th className="px-5 py-3.5 text-[12px] font-semibold uppercase tracking-wide text-right">Thao tác</th>
               </tr></thead>
               <tbody className="rows">
-                {rows.map((p: any) => {
-                  const s = STATUS[p.elabelStatus] ?? STATUS.draft;
+                {rows.map((p) => {
+                  const s = STATUS[p.elabelStatus ?? ''] ?? STATUS.draft;
                   return (
                     <tr key={p.id} className="card-hover">
                       <td className="px-5 py-3.5">
@@ -98,8 +91,8 @@ export default function Elabels() {
 
           {/* Thẻ cho di động */}
           <div className="flex flex-col gap-3 md:hidden">
-            {rows.map((p: any) => {
-              const s = STATUS[p.elabelStatus] ?? STATUS.draft;
+            {rows.map((p) => {
+              const s = STATUS[p.elabelStatus ?? ''] ?? STATUS.draft;
               return (
                 <div key={p.id} className="card card-hover p-4 anim-in">
                   <div className="flex items-start gap-3">
@@ -134,9 +127,7 @@ export default function Elabels() {
   );
 }
 
-function EditLabel({ product, onClose }: { product: any; onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
+function EditLabel({ product, onClose }: { product: Product; onClose: () => void }) {
   const detail = useQuery({ queryKey: ['elabel', product.id], queryFn: () => api.get(`/elabels/${product.id}`).then((r) => r.data) });
   const d = detail.data;
   const [f, setF] = useState<any>(null);
@@ -156,8 +147,8 @@ function EditLabel({ product, onClose }: { product: any; onClose: () => void }) 
     });
   }
 
-  const save = useMutation({
-    mutationFn: () => api.patch(`/elabels/${product.id}`, {
+  const save = useApiMutation(
+    () => api.patch(`/elabels/${product.id}`, {
       name: f.name, brand: f.brand, description: f.description, countryOfOrigin: f.countryOfOrigin, hsCode: f.hsCode,
       targetMarket: f.targetMarket, supplier: f.supplier, riskLevel: Number(f.riskLevel),
       netContent: f.netContent, ingredients: f.ingredients, usageInstructions: f.usageInstructions,
@@ -165,11 +156,10 @@ function EditLabel({ product, onClose }: { product: any; onClose: () => void }) 
       appendixGroup: f.appendixGroup || null, appendixAttributes: f.appendixAttributes,
       ownerInfo: f.owner, labelAttributes: f.attributes, labelImages: f.images, certificates: f.certificates,
     }),
-    onSuccess: () => { toast('Đã lưu nội dung nhãn'); qc.invalidateQueries({ queryKey: ['elabels'] }); qc.invalidateQueries({ queryKey: ['elabel', product.id] }); comp.refetch(); },
-    onError: (e) => toast(apiError(e), false),
-  });
+    { successMessage: 'Đã lưu nội dung nhãn', invalidate: [['elabels'], ['elabel', product.id]], onSuccess: () => comp.refetch() },
+  );
   const comp = useQuery({ queryKey: ['elabel-compliance', product.id], queryFn: () => api.get(`/elabels/${product.id}/compliance`).then((r) => r.data) });
-  const portalSync = useMutation({ mutationFn: () => api.post(`/elabels/${product.id}/portal-sync`), onSuccess: () => { toast('Đã kết nối Cổng truy xuất quốc gia'); comp.refetch(); qc.invalidateQueries({ queryKey: ['elabels'] }); }, onError: (e) => toast(apiError(e), false) });
+  const portalSync = useApiMutation(() => api.post(`/elabels/${product.id}/portal-sync`), { successMessage: 'Đã kết nối Cổng truy xuất quốc gia', invalidate: [['elabels']], onSuccess: () => comp.refetch() });
 
   return (
     <Drawer open onClose={onClose} title={<><b>Soạn nhãn</b><div className="text-xs text-[var(--muted)] mono">GTIN {product.gtin}</div></>}
@@ -259,19 +249,16 @@ function EditLabel({ product, onClose }: { product: any; onClose: () => void }) 
   );
 }
 
-function BatchesDrawer({ product, canEdit, onClose }: { product: any; canEdit: boolean; onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
+function BatchesDrawer({ product, canEdit, onClose }: { product: Product; canEdit: boolean; onClose: () => void }) {
   const detail = useQuery({ queryKey: ['elabel', product.id], queryFn: () => api.get(`/elabels/${product.id}`).then((r) => r.data) });
-  const inv = () => { qc.invalidateQueries({ queryKey: ['elabel', product.id] }); qc.invalidateQueries({ queryKey: ['elabels'] }); };
   const today = new Date().toISOString().slice(0, 10);
   const [nf, setNf] = useState({ batchCode: '', manufacturingDate: today, totalQuantity: '' });
   const [qr, setQr] = useState<any>(null);
 
-  const add = useMutation({ mutationFn: () => api.post(`/elabels/${product.id}/batches`, { batchCode: nf.batchCode, manufacturingDate: nf.manufacturingDate, totalQuantity: nf.totalQuantity ? Number(nf.totalQuantity) : undefined, status: 'published' }), onSuccess: () => { toast('Đã thêm lô'); setNf({ batchCode: '', manufacturingDate: today, totalQuantity: '' }); inv(); }, onError: (e) => toast(apiError(e), false) });
-  const setBs = useMutation({ mutationFn: ({ id, status, recallReason }: any) => api.post(`/elabels/${product.id}/batches/${id}/status`, { status, recallReason }), onSuccess: () => inv(), onError: (e) => toast(apiError(e), false) });
-  const del = useMutation({ mutationFn: (id: string) => api.delete(`/elabels/${product.id}/batches/${id}`), onSuccess: () => { toast('Đã xoá lô'); inv(); }, onError: (e) => toast(apiError(e), false) });
-  const loadQr = useMutation({ mutationFn: (id: string) => api.get(`/elabels/${product.id}/batches/${id}/qr`).then((r) => r.data), onSuccess: (data) => setQr(data), onError: (e) => toast(apiError(e), false) });
+  const add = useApiMutation(() => api.post(`/elabels/${product.id}/batches`, { batchCode: nf.batchCode, manufacturingDate: nf.manufacturingDate, totalQuantity: nf.totalQuantity ? Number(nf.totalQuantity) : undefined, status: 'published' }), { successMessage: 'Đã thêm lô', invalidate: [['elabel', product.id], ['elabels']], onSuccess: () => setNf({ batchCode: '', manufacturingDate: today, totalQuantity: '' }) });
+  const setBs = useApiMutation(({ id, status, recallReason }: any) => api.post(`/elabels/${product.id}/batches/${id}/status`, { status, recallReason }), { invalidate: [['elabel', product.id], ['elabels']] });
+  const del = useApiMutation((id: string) => api.delete(`/elabels/${product.id}/batches/${id}`), { successMessage: 'Đã xoá lô', invalidate: [['elabel', product.id], ['elabels']] });
+  const loadQr = useApiMutation((id: string) => api.get(`/elabels/${product.id}/batches/${id}/qr`).then((r) => r.data), { onSuccess: (data) => setQr(data) });
 
   const batches = detail.data?.batches ?? [];
   return (

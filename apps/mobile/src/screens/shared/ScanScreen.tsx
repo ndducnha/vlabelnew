@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '../../components/icons';
 import { api, apiError } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
-import { useTheme } from '../../theme';
-import { Button } from '../../components/ui';
+import { useTheme, font } from '../../theme';
+import { Button, IconBadge } from '../../components/ui';
 import { useToast } from '../../components/Toast';
 
 // Tách GTIN + lot từ nội dung QR (URL /t/:gtin?lot=... hoặc GTIN thô)
@@ -41,9 +42,11 @@ export default function ScanScreen({ navigation }: any) {
 
   if (!permission) return <View style={{ flex: 1, backgroundColor: '#000' }} />;
   if (!permission.granted) return (
-    <View style={{ flex: 1, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 }}>
-      <Text style={{ color: t.ink, fontWeight: '700', fontSize: 16, textAlign: 'center' }}>Cần quyền camera để quét QR</Text>
-      <Button title="Cấp quyền camera" onPress={requestPermission} />
+    <View style={{ flex: 1, backgroundColor: t.surface, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 16 }}>
+      <IconBadge name="camera-outline" tone="accent" size={64} />
+      <Text style={{ color: t.ink, fontFamily: font.serifBold, fontSize: 20, textAlign: 'center', letterSpacing: -0.2 }}>Cần quyền camera</Text>
+      <Text style={{ color: t.muted, fontFamily: font.body, fontSize: 13.5, textAlign: 'center', lineHeight: 20, marginTop: -6 }}>Cấp quyền để quét mã QR truy xuất nguồn gốc sản phẩm.</Text>
+      <Button title="Cấp quyền camera" icon="camera" onPress={requestPermission} style={{ alignSelf: 'stretch' }} />
     </View>
   );
 
@@ -51,21 +54,31 @@ export default function ScanScreen({ navigation }: any) {
     <View style={{ flex: 1, backgroundColor: '#000' }}>
       <CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{ barcodeTypes: ['qr'] }} onBarcodeScanned={locked ? undefined : onScan} />
       <View style={styles.overlay} pointerEvents="none">
-        <View style={styles.frame} />
-        <Text style={styles.hint}>Đưa mã QR vào khung để quét</Text>
+        <View style={styles.frame}>
+          <View style={[styles.corner, styles.tl]} /><View style={[styles.corner, styles.tr]} />
+          <View style={[styles.corner, styles.bl]} /><View style={[styles.corner, styles.br]} />
+        </View>
+        <View style={styles.hintPill}><Text style={styles.hint}>Đưa mã QR vào khung</Text></View>
       </View>
-      <View style={{ position: 'absolute', top: insets.top + 8, right: 16 }}>
-        <Pressable onPress={() => navigation.canGoBack() && navigation.goBack()} style={{ backgroundColor: 'rgba(0,0,0,.5)', borderRadius: 20, padding: 8 }}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>Đóng</Text>
+      <View style={{ position: 'absolute', top: insets.top + 10, right: 18 }}>
+        <Pressable onPress={() => navigation.canGoBack() && navigation.goBack()} hitSlop={8} style={{ backgroundColor: 'rgba(0,0,0,.55)', borderRadius: 22, width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+          <Icon name="close" size={22} color="#fff" />
         </Pressable>
       </View>
-      {locked && <View style={{ position: 'absolute', bottom: insets.bottom + 30, alignSelf: 'center' }}><Button title="Quét lại" onPress={() => setLocked(false)} /></View>}
+      {locked && <View style={{ position: 'absolute', bottom: insets.bottom + 34, alignSelf: 'center' }}><Button title="Quét lại" icon="refresh" onPress={() => setLocked(false)} /></View>}
     </View>
   );
 }
 
+const ACCENT = '#5AAAD0';
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
-  frame: { width: 240, height: 240, borderRadius: 24, borderWidth: 3, borderColor: 'rgba(255,255,255,.9)' },
-  hint: { color: '#fff', marginTop: 18, fontWeight: '600' },
+  frame: { width: 248, height: 248, borderRadius: 28 },
+  corner: { position: 'absolute', width: 34, height: 34, borderColor: ACCENT },
+  tl: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 28 },
+  tr: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 28 },
+  bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 28 },
+  br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 28 },
+  hintPill: { marginTop: 26, backgroundColor: 'rgba(0,0,0,.55)', paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999 },
+  hint: { color: '#fff', fontFamily: font.monoMed, fontSize: 11, letterSpacing: 1.4, textTransform: 'uppercase' },
 });

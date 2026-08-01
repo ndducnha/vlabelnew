@@ -1,57 +1,51 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Loader2, Trash2, ClipboardEdit, CalendarClock, Check, Package, AlertTriangle, ArrowRight, ListChecks, CircleCheck, Search } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, Loader2, Trash2, ClipboardEdit, CalendarClock, Check, Package, AlertTriangle, ArrowRight, ListChecks, CircleCheck, Search } from '../lib/icons';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, StatCard, Avatar, Paginator, usePaged } from '../components/ui';
-import { PERMISSIONS } from '@vlabel/shared';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, EmptyState, Drawer, SegmentedControl, StatCard, Avatar, Paginator, usePaged, statusClsMap } from '../components/ui';
+import { PERMISSIONS, TRACE_TASK_STATUS_LABELS } from '@vlabel/shared';
+import type { TraceTask, Product, Flow, Organization, UserSummary } from '@vlabel/shared';
 
-const STATUS: Record<string, { cls: string; label: string }> = {
-  PENDING: { cls: 'pill-warn', label: 'Chờ thực hiện' },
-  IN_PROGRESS: { cls: 'pill-accent', label: 'Đang làm' },
-  DONE: { cls: 'pill-good', label: 'Hoàn thành' },
-};
+const STATUS = statusClsMap(TRACE_TASK_STATUS_LABELS);
 
 export default function TraceTasks() {
   const { can } = useAuth();
   const nav = useNavigate();
-  const toast = useToast();
-  const qc = useQueryClient();
   const isManager = can(PERMISSIONS.FLOW_MANAGE);
   const [mine, setMine] = useState(!isManager);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
 
-  const tasks = useQuery({ queryKey: ['trace-tasks', mine], queryFn: () => api.get('/trace-tasks', { params: { mine: mine ? 1 : undefined } }).then((r) => r.data) });
-  const inv = () => qc.invalidateQueries({ queryKey: ['trace-tasks'] });
+  const tasks = useQuery<TraceTask[]>({ queryKey: ['trace-tasks', mine], queryFn: () => api.get('/trace-tasks', { params: { mine: mine ? 1 : undefined } }).then((r) => r.data) });
 
-  const setStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => api.patch(`/trace-tasks/${id}/status`, { status }),
-    onSuccess: () => inv(), onError: (e) => toast(apiError(e), false),
-  });
-  const del = useMutation({ mutationFn: (id: string) => api.delete(`/trace-tasks/${id}`), onSuccess: () => { toast('Đã xoá nhiệm vụ'); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const setStatus = useApiMutation(
+    ({ id, status }: { id: string; status: string }) => api.patch(`/trace-tasks/${id}/status`, { status }),
+    { invalidate: [['trace-tasks']] },
+  );
+  const del = useApiMutation((id: string) => api.delete(`/trace-tasks/${id}`), { successMessage: 'Đã xoá nhiệm vụ', invalidate: [['trace-tasks']] });
 
-  const doTask = (t: any) => {
+  const doTask = (t: TraceTask) => {
     if (t.status === 'PENDING') setStatus.mutate({ id: t.id, status: 'IN_PROGRESS' });
-    const p = new URLSearchParams({ productId: t.product.id });
+    const p = new URLSearchParams({ productId: t.product?.id ?? '' });
     if (t.lot) p.set('lot', t.lot);
     nav(`/entry?${p.toString()}`);
   };
 
-  const list: any[] = tasks.data ?? [];
+  const list: TraceTask[] = tasks.data ?? [];
   const now = new Date();
   const overdueCount = list.filter((t) => t.status !== 'DONE' && new Date(t.endDate) < now).length;
   const doneCount = list.filter((t) => t.status === 'DONE').length;
   const activeCount = list.length - doneCount;
-  const paged = usePaged<any>(list, (t, ql) =>
+  const paged = usePaged<TraceTask>(list, (t, ql) =>
     (t.name ?? '').toLowerCase().includes(ql) || (t.product?.name ?? '').toLowerCase().includes(ql) || (t.product?.gtin ?? '').toLowerCase().includes(ql) || (t.lot ?? '').toLowerCase().includes(ql) || (t.assignedUser?.fullName ?? '').toLowerCase().includes(ql), query, page);
 
   return (
     <>
-      <PageHead title="Lịch truy xuất" subtitle="Giao nhiệm vụ kê khai theo sản phẩm, lô, thời gian, người phụ trách"
+      <PageHead eyebrow="Phân công kê khai" title="Lịch truy xuất" subtitle="Giao nhiệm vụ kê khai theo sản phẩm, lô, thời gian, người phụ trách"
         actions={<>
           {isManager && (
             <SegmentedControl
@@ -71,7 +65,7 @@ export default function TraceTasks() {
         <div className="card"><EmptyState title={mine ? 'Bạn chưa có nhiệm vụ nào' : 'Chưa có nhiệm vụ'} hint={isManager ? 'Bấm Tạo nhiệm vụ để giao việc kê khai.' : 'Khi được giao, nhiệm vụ sẽ hiện ở đây.'} /></div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 anim-in">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 anim-in">
             <StatCard icon={<ListChecks size={16} />} label="Tổng nhiệm vụ" value={list.length} />
             <StatCard icon={<CalendarClock size={16} />} label="Đang thực hiện" value={activeCount} tone="warn" />
             <StatCard icon={<CircleCheck size={16} />} label="Hoàn thành" value={doneCount} tone="good" />
@@ -80,7 +74,7 @@ export default function TraceTasks() {
 
           <div className="flex flex-col gap-3">
             {paged.total === 0 && <p className="text-sm text-[var(--muted)] py-4 text-center">Không tìm thấy nhiệm vụ phù hợp.</p>}
-            {paged.rows.map((t: any) => {
+            {paged.rows.map((t) => {
               const s = STATUS[t.status] ?? STATUS.PENDING;
               const overdue = t.status !== 'DONE' && new Date(t.endDate) < new Date();
               return (
@@ -146,20 +140,17 @@ export default function TraceTasks() {
 }
 
 function CreateTask({ onClose }: { onClose: () => void }) {
-  const toast = useToast();
-  const qc = useQueryClient();
-  const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
-  const flows = useQuery({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
-  const orgs = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
-  const users = useQuery({ queryKey: ['users-branch', ''], queryFn: () => api.get('/users/branch').then((r) => r.data) });
+  const products = useQuery<Product[]>({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
+  const flows = useQuery<Flow[]>({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
+  const orgs = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
+  const users = useQuery<UserSummary[]>({ queryKey: ['users-branch', ''], queryFn: () => api.get('/users/branch').then((r) => r.data) });
   const today = new Date().toISOString().slice(0, 10);
   const [f, setF] = useState<any>({ name: '', productId: '', lot: '', flowId: '', organizationId: '', assignedUserId: '', startDate: today, endDate: today, note: '' });
 
-  const create = useMutation({
-    mutationFn: () => api.post('/trace-tasks', { ...f, flowId: f.flowId || undefined, organizationId: f.organizationId || undefined, name: f.name || undefined, lot: f.lot || undefined, note: f.note || undefined }),
-    onSuccess: () => { toast('Đã tạo nhiệm vụ, người phụ trách sẽ thấy khi đăng nhập'); qc.invalidateQueries({ queryKey: ['trace-tasks'] }); onClose(); },
-    onError: (e) => toast(apiError(e), false),
-  });
+  const create = useApiMutation(
+    () => api.post('/trace-tasks', { ...f, flowId: f.flowId || undefined, organizationId: f.organizationId || undefined, name: f.name || undefined, lot: f.lot || undefined, note: f.note || undefined }),
+    { successMessage: 'Đã tạo nhiệm vụ, người phụ trách sẽ thấy khi đăng nhập', invalidate: [['trace-tasks']], onSuccess: () => onClose() },
+  );
   const valid = f.productId && f.assignedUserId && f.startDate && f.endDate;
 
   return (
@@ -170,23 +161,23 @@ function CreateTask({ onClose }: { onClose: () => void }) {
       <label className="block mb-3"><span className="label">Sản phẩm *</span>
         <select className="input" value={f.productId} onChange={(e) => setF({ ...f, productId: e.target.value })}>
           <option value="">— chọn sản phẩm —</option>
-          {(products.data ?? []).map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.gtin})</option>)}
+          {(products.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.name} ({p.gtin})</option>)}
         </select></label>
       <label className="block mb-3"><span className="label">Lô (tuỳ chọn)</span><input className="input mono" value={f.lot} onChange={(e) => setF({ ...f, lot: e.target.value })} placeholder="LOT-2407-..." /></label>
       <label className="block mb-3"><span className="label">Flow (tuỳ chọn)</span>
         <select className="input" value={f.flowId} onChange={(e) => setF({ ...f, flowId: e.target.value })}>
           <option value="">— theo flow của sản phẩm —</option>
-          {(flows.data ?? []).map((fl: any) => <option key={fl.id} value={fl.id}>{fl.name}</option>)}
+          {(flows.data ?? []).map((fl) => <option key={fl.id} value={fl.id}>{fl.name}</option>)}
         </select></label>
       <label className="block mb-3"><span className="label">Tổ chức (tuỳ chọn)</span>
         <select className="input" value={f.organizationId} onChange={(e) => setF({ ...f, organizationId: e.target.value })}>
           <option value="">— không chỉ định —</option>
-          {(orgs.data ?? []).map((o: any) => <option key={o.id} value={o.id}>{o.name}</option>)}
+          {(orgs.data ?? []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select></label>
       <label className="block mb-3"><span className="label">Người phụ trách kê khai *</span>
         <select className="input" value={f.assignedUserId} onChange={(e) => setF({ ...f, assignedUserId: e.target.value })}>
           <option value="">— chọn người —</option>
-          {(users.data ?? []).map((u: any) => <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>)}
+          {(users.data ?? []).map((u) => <option key={u.id} value={u.id}>{u.fullName} ({u.email})</option>)}
         </select></label>
       <div className="grid grid-cols-2 gap-3">
         <label className="block"><span className="label">Từ ngày *</span><input className="input" type="date" value={f.startDate} onChange={(e) => setF({ ...f, startDate: e.target.value })} /></label>

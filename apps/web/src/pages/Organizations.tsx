@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2, Search } from 'lucide-react';
-import { api, apiError } from '../lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2, Search } from '../lib/icons';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useToast } from '../lib/toast';
+import { useApiMutation } from '../lib/useApiMutation';
 import { PageHead, Spinner, Drawer, EmptyState } from '../components/ui';
 import { PERMISSIONS } from '@vlabel/shared';
+import type { Organization } from '@vlabel/shared';
 
 interface Node { id: string; name: string; code: string; type: string; level: number; status: string; parentId: string | null; children: Node[] }
 
@@ -15,35 +16,29 @@ const typeForLevel = (lvl: number) => TYPE_BY_LEVEL[lvl] ?? 'DEPARTMENT';
 
 export default function Organizations() {
   const { can } = useAuth();
-  const toast = useToast();
-  const qc = useQueryClient();
   const canManage = can(PERMISSIONS.ORGANIZATION_MANAGE);
   const tree = useQuery({ queryKey: ['org-tree'], queryFn: () => api.get('/organizations/tree').then((r) => r.data as Node[]) });
-  const flat = useQuery({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
-  const inv = () => { qc.invalidateQueries({ queryKey: ['org-tree'] }); qc.invalidateQueries({ queryKey: ['orgs'] }); };
+  const flat = useQuery<Organization[]>({ queryKey: ['orgs'], queryFn: () => api.get('/organizations').then((r) => r.data) });
 
   const [create, setCreate] = useState<{ parentId: string | null } | null>(null);
   const [form, setForm] = useState({ name: '', code: '' });
   const [q, setQ] = useState('');
 
   const createLevel = create
-    ? (create.parentId ? ((flat.data ?? []).find((o: any) => o.id === create.parentId)?.level ?? 0) + 1 : 0)
+    ? (create.parentId ? ((flat.data ?? []).find((o) => o.id === create.parentId)?.level ?? 0) + 1 : 0)
     : 0;
 
-  const mCreate = useMutation({
-    mutationFn: () => api.post('/organizations', { ...form, type: typeForLevel(createLevel), parentId: create?.parentId ?? undefined }),
-    onSuccess: () => { toast('Đã thêm đơn vị'); setCreate(null); setForm({ name: '', code: '' }); inv(); },
-    onError: (e) => toast(apiError(e), false),
+  const mCreate = useApiMutation(() => api.post('/organizations', { ...form, type: typeForLevel(createLevel), parentId: create?.parentId ?? undefined }), {
+    successMessage: 'Đã thêm đơn vị',
+    invalidate: [['org-tree'], ['orgs']],
+    onSuccess: () => { setCreate(null); setForm({ name: '', code: '' }); },
   });
-  const mLevel = useMutation({
-    mutationFn: ({ id, direction }: { id: string; direction: 'up' | 'down' }) => api.patch(`/organizations/${id}/level`, { direction }),
-    onSuccess: () => inv(),
-    onError: (e) => toast(apiError(e), false),
+  const mLevel = useApiMutation(({ id, direction }: { id: string; direction: 'up' | 'down' }) => api.patch(`/organizations/${id}/level`, { direction }), {
+    invalidate: [['org-tree'], ['orgs']],
   });
-  const mDelete = useMutation({
-    mutationFn: (id: string) => api.delete(`/organizations/${id}`),
-    onSuccess: () => { toast('Đã xoá đơn vị'); inv(); },
-    onError: (e) => toast(apiError(e), false),
+  const mDelete = useApiMutation((id: string) => api.delete(`/organizations/${id}`), {
+    successMessage: 'Đã xoá đơn vị',
+    invalidate: [['org-tree'], ['orgs']],
   });
 
   const Row = ({ node, index, count }: { node: Node; index: number; count: number }) => {
@@ -97,7 +92,7 @@ export default function Organizations() {
 
   return (
     <>
-      <PageHead title="Tổ chức" subtitle="Cây đơn vị đa tầng · thêm và di chuyển đơn vị"
+      <PageHead eyebrow="Đơn vị" title="Tổ chức" subtitle="Cây đơn vị đa tầng · thêm và di chuyển đơn vị"
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -141,7 +136,7 @@ export default function Organizations() {
         footer={<><div className="flex-1" /><button className="btn" onClick={() => setCreate(null)}>Huỷ</button>
           <button className="btn btn-primary" disabled={!form.name || !form.code || mCreate.isPending} onClick={() => mCreate.mutate()}>{mCreate.isPending && <Loader2 size={15} className="animate-spin" />}Thêm</button></>}>
         <p className="text-sm text-[var(--muted)] mb-3">
-          {create?.parentId ? <>Thêm vào <b className="text-[var(--ink)]">{(flat.data ?? []).find((o: any) => o.id === create.parentId)?.name}</b> · </> : null}
+          {create?.parentId ? <>Thêm vào <b className="text-[var(--ink)]">{(flat.data ?? []).find((o) => o.id === create.parentId)?.name}</b> · </> : null}
           <span className="pill pill-accent">Cấp {createLevel + 1}</span>
         </p>
         <label className="block mb-3"><span className="label">Tên</span><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>

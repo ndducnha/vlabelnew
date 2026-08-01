@@ -7,7 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import {
   Route as RouteIcon, MapPin, Map as MapIcon, ListChecks, Play, Pause, SkipBack, SkipForward, Gauge,
   Ruler, Clock, Navigation, CircleCheck, Circle, Printer, Plus, Trash2, Pencil, X, Search, Building2, Milestone,
-} from 'lucide-react';
+} from '../lib/icons';
 import { api } from '../lib/api';
 import { PageHead, Spinner, EmptyState, StatCard, Drawer } from '../components/ui';
 import { loadLocations, saveLocations, matchLocation, distanceKm, LOC_TYPES, typeColor, DEFAULT_LOCATIONS, type Loc } from './journey/locations';
@@ -212,16 +212,16 @@ function RealMap({ stops, current, show }: any) {
     const gps = stops.filter((s: any) => s.gps);
     const latlngs = gps.map((s: any) => [s.gps.lat, s.gps.lng]) as [number, number][];
     if (show.path && latlngs.length > 1) {
-      L.polyline(latlngs, { color: '#2E5BE8', weight: 3.5, opacity: 0.85 }).addTo(g);
+      L.polyline(latlngs, { color: '#14486F', weight: 3.5, opacity: 0.85 }).addTo(g);
       for (let i = 0; i < gps.length - 1; i++) {
         const a = gps[i].gps, b = gps[i + 1].gps; const mid: [number, number] = [(a.lat + b.lat) / 2, (a.lng + b.lng) / 2]; const ang = bearing(a, b) - 90;
-        L.marker(mid, { icon: L.divIcon({ className: '', html: `<div style="transform:rotate(${ang}deg);color:#2E5BE8;font-size:18px;line-height:1">▶</div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(g);
+        L.marker(mid, { icon: L.divIcon({ className: '', html: `<div style="transform:rotate(${ang}deg);color:#14486F;font-size:18px;line-height:1">▶</div>`, iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(g);
         if (show.distance) L.marker(mid, { icon: L.divIcon({ className: '', html: `<div style="background:#fff;border:1px solid #E7EAF2;border-radius:8px;padding:1px 6px;font-size:10px;font-weight:700;color:#41506B;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.12);transform:translateY(-16px)">${distanceKm(a, b).toFixed(1)} km</div>`, iconSize: [0, 0] }) }).addTo(g);
       }
     }
     if (show.markers) {
       stops.forEach((s: any, i: number) => {
-        if (!s.gps) return; const cur = i === current; const c = s.color || '#2E5BE8';
+        if (!s.gps) return; const cur = i === current; const c = s.color || '#14486F';
         const html = `<div style="width:30px;height:30px;border-radius:50%;background:${c};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);${cur ? 'outline:3px solid ' + c + '55;' : ''}">${i + 1}</div>`;
         const mk = L.marker([s.gps.lat, s.gps.lng], { icon: L.divIcon({ className: '', html, iconSize: [30, 30], iconAnchor: [15, 15] }), zIndexOffset: cur ? 1000 : 0 }).addTo(g);
         if (show.info) mk.bindPopup(`<b>${i + 1}. ${s.event}</b><br/><span style="color:#6A778F">${s.location}</span><br/>${s.performer} · ${vnDateTime(s.performedAt)}${s.action ? '<br/>' + s.action : ''}`);
@@ -254,12 +254,12 @@ function EnterpriseMap({ stops, current, show }: any) {
   const nodes = useMemo(() => stops.map((s: any, i: number) => ({
     id: String(i), position: { x: i * 230, y: (i % 2) * 120 }, draggable: false,
     data: { label: <div style={{ textAlign: 'left' }}><div style={{ fontWeight: 700, fontSize: 12 }}>{i + 1}. {s.event}</div><div style={{ fontSize: 11, color: '#6A778F' }}>{s.location}</div></div> },
-    style: { background: (s.color || '#2E5BE8') + '18', border: `2px solid ${i === current ? s.color || '#2E5BE8' : (s.color || '#2E5BE8') + '66'}`, borderRadius: 14, padding: 10, width: 190, boxShadow: i === current ? `0 0 0 3px ${(s.color || '#2E5BE8')}33` : 'none' },
+    style: { background: (s.color || '#14486F') + '18', border: `2px solid ${i === current ? s.color || '#14486F' : (s.color || '#14486F') + '66'}`, borderRadius: 14, padding: 10, width: 190, boxShadow: i === current ? `0 0 0 3px ${(s.color || '#14486F')}33` : 'none' },
   })), [stops, current]);
   const edges = useMemo(() => stops.slice(1).map((s: any, i: number) => ({
     id: 'e' + i, source: String(i), target: String(i + 1), animated: i < current,
-    markerEnd: show.path ? { type: MarkerType.ArrowClosed, color: '#2E5BE8' } : undefined,
-    style: { stroke: show.path ? '#2E5BE8' : 'transparent', strokeWidth: 2 },
+    markerEnd: show.path ? { type: MarkerType.ArrowClosed, color: '#14486F' } : undefined,
+    style: { stroke: show.path ? '#14486F' : 'transparent', strokeWidth: 2 },
     label: show.distance && stops[i].gps && s.gps ? `${distanceKm(stops[i].gps, s.gps).toFixed(1)} km` : undefined,
     labelStyle: { fontSize: 10, fontWeight: 700, fill: '#41506B' }, labelBgStyle: { fill: '#fff' },
   })), [stops, current, show]);

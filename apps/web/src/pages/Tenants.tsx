@@ -1,28 +1,29 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, Loader2 } from 'lucide-react';
-import { api, apiError } from '../lib/api';
-import { useToast } from '../lib/toast';
-import { PageHead, Spinner, Drawer } from '../components/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Building2, Plus, Loader2 } from '../lib/icons';
+import { api } from '../lib/api';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, Drawer, EmptyState } from '../components/ui';
 
 export default function Tenants() {
-  const toast = useToast();
-  const qc = useQueryClient();
   const list = useQuery({ queryKey: ['tenants'], queryFn: () => api.get('/tenants').then((r) => r.data) });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', rootOrgName: '', adminName: '', adminEmail: '', adminPassword: 'Vlabel@123' });
 
-  const create = useMutation({
-    mutationFn: () => api.post('/tenants', form),
-    onSuccess: (r) => { toast(`🎉 Đã tạo tenant · admin ${r.data.admin.email}`); setOpen(false); qc.invalidateQueries({ queryKey: ['tenants'] }); },
-    onError: (e) => toast(apiError(e), false),
+  const create = useApiMutation(() => api.post('/tenants', form), {
+    successMessage: (r) => `🎉 Đã tạo tenant · admin ${r.data.admin.email}`,
+    invalidate: [['tenants']],
+    onSuccess: () => setOpen(false),
   });
 
   return (
     <>
-      <PageHead title="Quản lý Tenant" subtitle="Onboarding khách hàng (tỉnh / doanh nghiệp)"
+      <PageHead eyebrow="Tenant" title="Quản lý Tenant" subtitle="Onboarding khách hàng (tỉnh / doanh nghiệp)"
         actions={<button className="btn btn-primary" onClick={() => setOpen(true)}><Plus size={16} />Tạo tenant</button>} />
-      {list.isLoading ? <Spinner /> : (
+      {list.isLoading ? <Spinner /> : (list.data?.length ?? 0) === 0 ? (
+        <div className="card"><EmptyState title="Chưa có tenant" hint="Tạo tenant đầu tiên để onboarding khách hàng."
+          action={<button className="btn btn-primary btn-sm" onClick={() => setOpen(true)}><Plus size={15} />Tạo tenant</button>} /></div>
+      ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead><tr className="text-left text-[11px] uppercase tracking-wide text-[var(--faint)]">

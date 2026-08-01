@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { X } from 'lucide-react';
+import { X } from '../lib/icons';
 
 /** Quét QR bằng camera thiết bị (html5-qrcode, chạy offline). */
 export default function QrScanner({ onResult, onClose }: { onResult: (text: string) => void; onClose: () => void }) {

@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   Plus, Search, Pencil, Copy, Trash2, ExternalLink, Send, Archive, ChevronLeft, ArrowRight, Check, Loader2,
   Bold, Italic, Underline, List, ListOrdered, AlignLeft, AlignCenter, AlignRight, Link2, Image as ImageIcon, Undo2, Redo2, Eraser, Package, Eye, Minus, FilePlus2,
-} from 'lucide-react';
+} from '../lib/icons';
 import { api, apiError, fileUrl } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useToast } from '../lib/toast';
-import { PageHead, Spinner, EmptyState, SegmentedControl, Paginator } from '../components/ui';
-import { PERMISSIONS } from '@vlabel/shared';
+import { useApiMutation } from '../lib/useApiMutation';
+import { PageHead, Spinner, EmptyState, SegmentedControl, Paginator, ProgressBar, statusClsMap, Row } from '../components/ui';
+import { PERMISSIONS, SUPPLEMENTARY_STATUS_LABELS } from '@vlabel/shared';
 
 const SCOPE: Record<string, string> = { ALL: 'Toàn bộ sản phẩm', BATCH: 'Theo lô', PRODUCTION: 'Theo ngày SX', ITEM: 'Theo đơn vị (serial)' };
-const STATUS: Record<string, { cls: string; label: string }> = { draft: { cls: 'pill-warn', label: 'Nháp' }, published: { cls: 'pill-good', label: 'Đã xuất bản' }, archived: { cls: 'pill-neutral', label: 'Ngừng dùng' } };
+const STATUS = statusClsMap(SUPPLEMENTARY_STATUS_LABELS);
 const VARIABLES: [string, string][] = [['{{product_name}}', 'Tên SP'], ['{{gtin}}', 'GTIN'], ['{{batch_number}}', 'Số lô'], ['{{manufacturing_date}}', 'NSX'], ['{{expiry_date}}', 'HSD'], ['{{manufacturer_name}}', 'Nhà SX'], ['{{manufacturer_address}}', 'Địa chỉ'], ['{{origin}}', 'Xuất xứ'], ['{{qr_code}}', 'Mã QR']];
 const TITLES: Record<string, string> = { product: 'Chọn sản phẩm', scope: 'Phạm vi áp dụng', content: 'Soạn trang nhãn phụ', publish: 'Lưu và xuất bản' };
 
@@ -37,17 +38,14 @@ export default function Supplementary() {
 }
 
 function ListView({ canEdit, onNew, onEdit }: any) {
-  const toast = useToast();
-  const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const list = useQuery({ queryKey: ['supp', status], queryFn: () => api.get('/supplementary-labels', { params: { status: status || undefined } }).then((r) => r.data) });
-  const inv = () => qc.invalidateQueries({ queryKey: ['supp'] });
-  const del = useMutation({ mutationFn: (id: string) => api.delete(`/supplementary-labels/${id}`), onSuccess: () => { toast('Đã xóa'); inv(); }, onError: (e) => toast(apiError(e), false) });
-  const clone = useMutation({ mutationFn: (id: string) => api.post(`/supplementary-labels/${id}/clone`), onSuccess: () => { toast('Đã sao chép'); inv(); }, onError: (e) => toast(apiError(e), false) });
-  const setSt = useMutation({ mutationFn: ({ id, s }: any) => api.post(`/supplementary-labels/${id}/status`, { status: s }), onSuccess: () => { toast('Đã cập nhật'); inv(); }, onError: (e) => toast(apiError(e), false) });
+  const del = useApiMutation((id: string) => api.delete(`/supplementary-labels/${id}`), { successMessage: 'Đã xóa', invalidate: [['supp']] });
+  const clone = useApiMutation((id: string) => api.post(`/supplementary-labels/${id}/clone`), { successMessage: 'Đã sao chép', invalidate: [['supp']] });
+  const setSt = useApiMutation(({ id, s }: any) => api.post(`/supplementary-labels/${id}/status`, { status: s }), { successMessage: 'Đã cập nhật', invalidate: [['supp']] });
 
   const filtered = (list.data ?? []).filter((r: any) => !q || r.name?.toLowerCase().includes(q.toLowerCase()) || r.product?.name?.toLowerCase().includes(q.toLowerCase()) || (r.product?.gtin ?? '').includes(q) || (r.batchCode ?? '').includes(q));
   const total = filtered.length;
@@ -58,7 +56,7 @@ function ListView({ canEdit, onNew, onEdit }: any) {
 
   return (
     <>
-      <PageHead title="Nhãn phụ" subtitle="Nhãn bổ sung (thường tiếng Việt) gắn theo sản phẩm/lô, hiển thị trên cùng mã QR"
+      <PageHead eyebrow="Nhãn hàng hóa" title="Nhãn phụ" subtitle="Nhãn bổ sung (thường tiếng Việt) gắn theo sản phẩm/lô, hiển thị trên cùng mã QR"
         actions={<>
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
@@ -113,7 +111,6 @@ function ListView({ canEdit, onNew, onEdit }: any) {
 
 function Wizard({ initial, onClose }: { initial: any; onClose: () => void }) {
   const toast = useToast();
-  const qc = useQueryClient();
   const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
   const [idx, setIdx] = useState(0);
   const [f, setF] = useState<any>({
@@ -135,8 +132,8 @@ function Wizard({ initial, onClose }: { initial: any; onClose: () => void }) {
     if (f.id) { await api.patch(`/supplementary-labels/${f.id}`, payload()); return f.id; }
     const { data } = await api.post('/supplementary-labels', payload()); setF((s: any) => ({ ...s, id: data.id })); return data.id;
   };
-  const save = useMutation({ mutationFn: saveDraft, onSuccess: () => { toast('Đã lưu nháp'); qc.invalidateQueries({ queryKey: ['supp'] }); onClose(); }, onError: (e) => toast(apiError(e), false) });
-  const publish = useMutation({ mutationFn: async () => { const id = await saveDraft(); await api.post(`/supplementary-labels/${id}/status`, { status: 'published' }); }, onSuccess: () => { toast('✅ Đã xuất bản nhãn phụ'); qc.invalidateQueries({ queryKey: ['supp'] }); onClose(); }, onError: (e) => toast(apiError(e), false) });
+  const save = useApiMutation(saveDraft, { successMessage: 'Đã lưu nháp', invalidate: [['supp']], onSuccess: () => onClose() });
+  const publish = useApiMutation(async () => { const id = await saveDraft(); await api.post(`/supplementary-labels/${id}/status`, { status: 'published' }); }, { successMessage: '✅ Đã xuất bản nhãn phụ', invalidate: [['supp']], onSuccess: () => onClose() });
 
   const canNext = screen === 'product' ? !!f.productId : true;
   const selectProduct = (p: any) => setF((s: any) => ({ ...s, productId: p.id, product: p }));
@@ -148,7 +145,7 @@ function Wizard({ initial, onClose }: { initial: any; onClose: () => void }) {
         <div className="flex-1 text-center"><div className="text-[11px] font-bold uppercase tracking-wide text-[var(--faint)]">Bước {idx + 1}/{steps.length}</div><div className="text-[13px] font-semibold">{f.id ? 'Sửa nhãn phụ' : 'Tạo nhãn phụ'}</div></div>
         <button className="btn btn-ghost btn-sm" onClick={() => save.mutate()} title="Lưu nháp" disabled={!f.productId || save.isPending}>{save.isPending ? <Loader2 size={16} className="animate-spin" /> : 'Lưu'}</button>
       </div>
-      <div className="h-2 rounded-full overflow-hidden mb-5" style={{ background: 'var(--surface)' }}><div className="h-full rounded-full transition-all duration-300" style={{ width: `${((idx + 1) / steps.length) * 100}%`, background: 'linear-gradient(90deg,var(--accent),#7aa0ff)' }} /></div>
+      <div className="mb-5"><ProgressBar value={((idx + 1) / steps.length) * 100} /></div>
 
       <div key={screen} className="anim-in">
         <h2 className="text-[22px] font-extrabold tracking-tight mb-1">{TITLES[screen]}</h2>
@@ -238,7 +235,7 @@ function ContentStep({ f, setF, qrUrl }: any) {
   );
 }
 
-const COLORS = ['#111827', '#E23744', '#12A150', '#2E5BE8', '#D97706'];
+const COLORS = ['#1B1A18', '#BC3B30', '#2E7D5B', '#14486F', '#B47714'];
 function RichEditor({ value, onChange, variables, template }: { value: string; onChange: (html: string) => void; variables?: [string, string][]; template?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (ref.current && ref.current.innerHTML !== value) ref.current.innerHTML = value || ''; /* eslint-disable-next-line */ }, []);
@@ -317,4 +314,3 @@ function PublishStep({ f, setF }: any) {
 }
 
 function L({ label, children }: any) { return <label className="block"><span className="label">{label}</span>{children}</label>; }
-function Row({ k, v, mono }: any) { return <div className="flex justify-between gap-4 py-2.5 text-sm"><span className="text-[var(--muted)]">{k}</span><b className={`text-right ${mono ? 'mono' : ''}`}>{v ?? '—'}</b></div>; }

@@ -3,45 +3,53 @@
 @tailwind utilities;
 
 :root{
-  --accent:#2E5BE8; --accent-press:#1E40C0; --accent-soft:#EAF1FF; --accent-ink:#1B3A8F; --accent-2:#4C7DFF;
-  --bg:#FFFFFF; --surface:#F5F7FB; --card:#FFFFFF;
-  --border:#E7EAF2; --border-strong:#D6DCEA;
-  --ink:#0F1626; --ink-2:#41506B; --muted:#6A778F; --faint:#98A3B8;
-  --good:#12A150; --good-soft:#E5F6EC; --warn:#D97706; --warn-soft:#FBF0DD; --danger:#E23744; --danger-soft:#FCE9EA;
-  --shadow-sm:0 1px 2px rgba(15,22,38,.05),0 1px 3px rgba(15,22,38,.05);
-  --shadow-md:0 6px 20px rgba(15,22,38,.09); --shadow-lg:0 24px 60px rgba(15,22,38,.20);
+  /* Bảng màu lấy từ logo Vlabel (chữ V nhãn dán, gradient teal-blue #14486F → #4FA3C8). Nền mát/sạch. */
+  --accent:#1A5C88; --accent-press:#123E60; --accent-deep:#14486F; --accent-soft:#E7F1F6; --accent-ink:#14486F; --accent-2:#4FA3C8; --accent-contrast:#FFFFFF;
+  --bg:#FFFFFF; --surface:#EFF4F8; --card:#FFFFFF;
+  --border:#E1E9F0; --border-strong:#CDD9E3; --hairline:#ECF1F5;
+  --ink:#12222E; --ink-2:#3B4E5B; --muted:#62727F; --faint:#9AAAB6;
+  --good:#1E8E6A; --good-soft:#E2F2EC; --warn:#B9781A; --warn-soft:#F7EDD9; --danger:#D14A3E; --danger-soft:#FAE8E5;
+  --serif:'Playfair Display',ui-serif,Georgia,serif;
+  --sans:'Be Vietnam Pro',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,"SF Mono",Menlo,monospace;
+  --shadow-sm:0 1px 2px rgba(15,58,87,.05),0 1px 3px rgba(15,58,87,.05);
+  --shadow-md:0 6px 20px rgba(15,58,87,.10); --shadow-lg:0 24px 60px rgba(15,58,87,.18);
 }
 :root[data-theme="dark"]{
-  --accent:#5B8CFF; --accent-press:#3E71F0; --accent-soft:#18233D; --accent-ink:#AFC6FF; --accent-2:#8AA9FF;
-  --bg:#0B0E14; --surface:#0F141E; --card:#141A26; --border:#242C3B; --border-strong:#323C50;
-  --ink:#E8ECF4; --ink-2:#B8C1D4; --muted:#8A94AB; --faint:#5D6884;
-  --good:#3BD37E; --good-soft:#122A1E; --warn:#E5A64B; --warn-soft:#2A2113; --danger:#F26D71; --danger-soft:#2E1719;
+  --accent:#5AAAD0; --accent-press:#4791BA; --accent-deep:#2C6B92; --accent-soft:#122C3D; --accent-ink:#A9DCEC; --accent-2:#8CCADF; --accent-contrast:#06222F;
+  --bg:#141C23; --surface:#0D141A; --card:#19232D; --border:#28333E; --border-strong:#384654; --hairline:#212B34;
+  --ink:#E7EEF3; --ink-2:#B6C3CD; --muted:#8493A0; --faint:#57666F;
+  --good:#4FC79B; --good-soft:#12291F; --warn:#E0A94B; --warn-soft:#2C2314; --danger:#EF6F66; --danger-soft:#301917;
   --shadow-sm:0 1px 2px rgba(0,0,0,.4); --shadow-md:0 6px 18px rgba(0,0,0,.45); --shadow-lg:0 22px 54px rgba(0,0,0,.6);
 }
 
 html,body,#root{height:100%}
 body{margin:0;background:var(--surface);color:var(--ink);
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Inter,system-ui,sans-serif;
+  font-family:var(--sans);
   font-size:15px;-webkit-font-smoothing:antialiased}
 *{box-sizing:border-box}
 ::selection{background:var(--accent-soft);color:var(--accent-ink)}
-.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .num{font-variant-numeric:tabular-nums}
+.serif{font-family:var(--serif);letter-spacing:-.01em}
+/* Motif chữ ký: gạch navy 16x2 + chữ mono IN HOA */
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+.eyebrow::before{content:"";width:16px;height:2px;border-radius:2px;background:var(--accent);flex:none}
 
 @layer components{
-  .btn{ @apply inline-flex items-center gap-2 rounded-[12px] px-3.5 py-2.5 text-sm font-semibold; border:1px solid var(--border); background:var(--bg); color:var(--ink); box-shadow:var(--shadow-sm); transition:background .15s,transform .06s; }
-  .btn:hover{ background:var(--surface); }
+  .btn{ @apply inline-flex items-center gap-2 rounded-[12px] px-3.5 py-2.5 text-sm font-semibold; border:1px solid var(--border); background:var(--bg); color:var(--ink); box-shadow:var(--shadow-sm); transition:background .15s,box-shadow .15s,transform .08s; }
+  .btn:hover{ background:var(--surface); box-shadow:var(--shadow-md); }
   .btn:active{ transform:translateY(1px); }
   .btn:disabled{ opacity:.5; pointer-events:none; }
-  .btn-primary{ background:var(--accent); border-color:transparent; color:#fff; box-shadow:0 6px 16px rgba(46,91,232,.34); }
+  .btn-primary{ background:var(--accent); border-color:transparent; color:var(--accent-contrast); box-shadow:0 6px 16px rgba(20,72,111,.24); }
   .btn-primary:hover{ background:var(--accent-press); }
   .btn-ghost{ background:transparent; box-shadow:none; border-color:transparent; }
   .btn-danger{ color:var(--danger); }
   .btn-danger:hover{ background:var(--danger-soft); }
   .btn-sm{ @apply px-2.5 py-1.5 text-[13px]; }
 
-  .card{ background:var(--card); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow-sm); }
-  .input{ @apply w-full rounded-[12px] px-3 py-2.5 text-[15px] outline-none; border:1px solid var(--border-strong); background:var(--bg); color:var(--ink); transition:border .15s,box-shadow .15s; }
+  .card{ background:var(--card); border:1px solid var(--border); border-radius:20px; box-shadow:var(--shadow-sm); transition:box-shadow .18s,border-color .18s,transform .12s; }
+  .input{ @apply w-full rounded-[12px] px-3.5 py-3 text-[15px] outline-none; border:1px solid var(--border-strong); background:var(--bg); color:var(--ink); transition:border .15s,box-shadow .15s; }
   .input:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
   .label{ @apply block text-[13px] font-semibold mb-1.5; color:var(--ink-2); }
 
@@ -59,17 +67,18 @@ body{margin:0;background:var(--surface);color:var(--ink);
   .btn-lg{ @apply w-full justify-center rounded-[14px] px-5 py-3.5 text-[15px] font-bold; min-height:52px; }
 
   /* Thẻ lựa chọn lớn cho wizard */
-  .opt{ @apply flex items-center gap-3 w-full text-left rounded-[14px] px-4 py-3.5; border:1.5px solid var(--border); background:var(--card); transition:border .15s,background .15s,box-shadow .15s; min-height:60px; }
-  .opt:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-sm); }
+  .opt{ @apply flex items-center gap-3 w-full text-left rounded-[16px] px-4 py-3.5; border:1.5px solid var(--border); background:var(--card); transition:border .15s,background .15s,box-shadow .15s,transform .12s; min-height:60px; }
+  .opt:hover{ border-color:var(--border-strong); box-shadow:var(--shadow-md); transform:translateY(-1px); }
   .opt.sel{ border-color:var(--accent); background:var(--accent-soft); box-shadow:0 0 0 3px var(--accent-soft); }
 
   /* Icon container bo tròn */
   .iconbox{ @apply grid place-items-center flex-none rounded-xl; width:38px; height:38px; background:var(--accent-soft); color:var(--accent); }
 
   /* KPI / thẻ thống kê */
-  .stat{ @apply flex flex-col gap-1 rounded-2xl p-4; background:var(--card); border:1px solid var(--border); box-shadow:var(--shadow-sm); }
-  .stat .k{ @apply text-[12px] font-semibold; color:var(--muted); }
-  .stat .v{ @apply text-[26px] font-extrabold tracking-tight; }
+  .stat{ @apply flex flex-col gap-1 rounded-[20px] p-5; background:var(--card); border:1px solid var(--border); box-shadow:var(--shadow-sm); transition:box-shadow .18s,transform .12s; }
+  .stat:hover{ box-shadow:var(--shadow-md); }
+  .stat .k{ @apply text-[11px] font-semibold uppercase; font-family:var(--mono); letter-spacing:1px; color:var(--muted); }
+  .stat .v{ @apply text-[30px] tracking-tight; font-family:var(--serif); font-weight:700; }
 
   /* Segmented control */
   .seg{ @apply inline-flex gap-0.5 p-0.5 rounded-[11px]; background:var(--surface); border:1px solid var(--border); }
@@ -79,10 +88,10 @@ body{margin:0;background:var(--surface);color:var(--ink);
   /* Tabs */
   .tabbar{ @apply flex gap-1 p-1 rounded-[12px]; background:var(--surface); border:1px solid var(--border); }
   .tabbar button{ @apply flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[9px] text-[13px] font-semibold; color:var(--muted); }
-  .tabbar button.on{ background:var(--accent); color:#fff; }
+  .tabbar button.on{ background:var(--accent); color:var(--accent-contrast); }
 
   /* Hàng có gạch phân cách */
-  .rows > * + *{ border-top:1px solid var(--border); }
+  .rows > * + *{ border-top:1px solid var(--hairline); }
 }
 
 /* Trang QR công khai */
@@ -90,8 +99,8 @@ body{margin:0;background:var(--surface);color:var(--ink);
 .rows-list > div:first-child{ border-top:none !important; }
 
 /* Nội dung nhãn phụ hiển thị như một trang web */
-.np-content h2{ font-size:19px; font-weight:800; margin:.5em 0 .3em; color:var(--ink); }
-.np-content h3{ font-size:15px; font-weight:700; margin:.7em 0 .2em; color:var(--ink); }
+.np-content h2{ font-family:var(--serif); font-size:20px; font-weight:700; margin:.5em 0 .3em; color:var(--ink); letter-spacing:-.01em; }
+.np-content h3{ font-family:var(--serif); font-size:16px; font-weight:700; margin:.7em 0 .2em; color:var(--ink); }
 .np-content p{ margin:.35em 0; }
 .np-content ul,.np-content ol{ padding-left:1.35em; margin:.35em 0; }
 .np-content li{ margin:.15em 0; }
@@ -107,8 +116,8 @@ body{margin:0;background:var(--surface);color:var(--ink);
 .ws-sep{ width:1px; height:20px; background:var(--border); margin:0 4px; }
 
 /* Card có hover nhẹ khi là link/nút */
-.card-hover{ transition:box-shadow .15s,transform .06s,border-color .15s; }
-.card-hover:hover{ box-shadow:var(--shadow-md); border-color:var(--border-strong); }
+.card-hover{ transition:box-shadow .18s,transform .12s,border-color .18s; }
+.card-hover:hover{ box-shadow:var(--shadow-md); border-color:var(--border-strong); transform:translateY(-2px); }
 
 /* Chuyển cảnh mượt cho từng bước wizard */
 .anim-in{ animation:animIn .28s cubic-bezier(.22,.61,.36,1) both; }

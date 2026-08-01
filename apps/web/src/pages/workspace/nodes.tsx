@@ -1,5 +1,5 @@
 import { Handle, Position } from '@xyflow/react';
-import { Tag, GitBranch, Building2, CalendarClock, Workflow, Layers, CircleDot, Users, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { Tag, GitBranch, Building2, CalendarClock, Workflow, Layers, CircleDot, Users, Plus, ChevronDown, ChevronRight } from '../../lib/icons';
 
 // Handle ẩn ở tâm node để cạnh nối vẽ dạng nan hoa từ QR ra 4 góc.
 function CH() {
@@ -10,7 +10,7 @@ function CH() {
 const KIND = {
   elabel: { color: '#7c5cff', Icon: Tag },
   txng: { color: '#2f9e5f', Icon: GitBranch },
-  org: { color: '#2f6bff', Icon: Building2 },
+  org: { color: '#14486F', Icon: Building2 },
   schedule: { color: '#e08a2f', Icon: CalendarClock },
 } as const;
 
@@ -89,7 +89,7 @@ export function OrgItemNode({ data }: any) {
     <div className="ws-node ws-leaf" style={{ borderColor: '#6f9bff' }} onClick={() => data.onSelect(data.sel)}>
       <CH />
       <div className="flex items-center gap-2">
-        <span className="ws-ico ws-ico-sm" style={{ background: '#e9f0ff', color: '#2f6bff' }}><Building2 size={14} /></span>
+        <span className="ws-ico ws-ico-sm" style={{ background: '#EEF1FB', color: '#14486F' }}><Building2 size={14} /></span>
         <div className="flex-1 min-w-0"><div className="ws-title truncate">{data.item.label}</div>{data.item.meta && <div className="ws-sub truncate">{data.item.meta}</div>}</div>
       </div>
     </div>

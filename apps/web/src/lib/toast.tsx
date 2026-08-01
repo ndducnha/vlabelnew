@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X } from './icons';
 
 type Toast = { id: number; msg: string; ok: boolean };
 const Ctx = createContext<(msg: string, ok?: boolean) => void>(() => {});
