@@ -300,6 +300,22 @@ async function main() {
     }
   }
 
+  // ── Đa Flow / sản phẩm + phân công chi tiết (làm nổi bật màn Quản lý) ──
+  const distFlow = await makeFlow(group.id, 'Chuỗi phân phối & bảo quản', 'PHAN-PHOI', [
+    { code: 'NHAP_KHO', name: 'Nhập kho phân phối', order: 1, fields: [['warehouse', 'Kho', 'text', false, true], ['temp', 'Nhiệt độ kho (°C)', 'number', false, true]] },
+    { code: 'VAN_CHUYEN', name: 'Vận chuyển', order: 2, fields: [['vehicle', 'Phương tiện', 'text', false, true], ['route', 'Tuyến đường', 'text', false, false]] },
+    { code: 'GIAO_HANG', name: 'Giao đến điểm bán', order: 3, fields: [['store', 'Điểm bán', 'text', false, true]] },
+  ]);
+  // Gắn Flow phân phối làm Flow THỨ HAI cho vài sản phẩm (một QR nhiều Flow)
+  for (const body of ['893110000001', '893120000001', '893130000001'])
+    if (registry[body]) await prisma.productFlow.create({ data: { productId: registry[body].id, flowId: distFlow.flowId } });
+  // Phân công TOÀN Flow phân phối cho một số người
+  for (const u of [uPharma2, uBeauty2, uPccc2]) await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: u.id, flowId: distFlow.flowId } });
+  // Phân công CHI TIẾT theo từng công đoạn (quyền chi tiết ưu tiên hơn toàn Flow)
+  await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uPharma2.id, flowId: pharmaFlow.flowId, eventDefinitionId: pharmaFlow.defByCode.get('DONG_GOI')! } });
+  await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uBeauty2.id, flowId: beautyFlow.flowId, eventDefinitionId: beautyFlow.defByCode.get('DONG_GOI')! } });
+  await prisma.flowPermission.create({ data: { tenantId: tenant.id, userId: uPccc2.id, flowId: pcccFlow.flowId, eventDefinitionId: pcccFlow.defByCode.get('XUAT_XUONG')! } });
+
   // ── Lịch truy xuất (nhiệm vụ) đủ trạng thái ──
   const task = (name: string, body: string, lot: string, flow: any, orgId: string, assignee: any, start: string, end: string, status: string) =>
     prisma.traceTask.create({ data: { tenantId: tenant.id, name, productId: registry[body].id, lot, flowId: flow.flowId, organizationId: orgId, assignedUserId: assignee.id, startDate: new Date(start), endDate: new Date(end), status, createdByUserId: manager.id } });
