@@ -95,7 +95,7 @@ export default function Layout() {
             <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--faint)] mt-1" style={{ fontFamily: 'var(--mono)' }}>{t('tagline')}</div>
           </div>
         </div>
-        <nav className="flex flex-col gap-0.5">
+        <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto min-h-0 -mr-1 pr-1">
           {sections.map((s) => (
             <div key={s.titleKey} className="flex flex-col gap-0.5 mb-1.5">
               <div className="px-2.5 pt-2.5 pb-1 text-[10px] font-medium uppercase text-[var(--faint)]" style={{ fontFamily: 'var(--mono)', letterSpacing: '1.4px' }}>{t(s.titleKey)}</div>
@@ -112,8 +112,7 @@ export default function Layout() {
             </div>
           ))}
         </nav>
-        <div className="flex-1" />
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 mt-1.5 pt-1.5" style={{ borderTop: '1px solid var(--border)' }}>
           <button onClick={toggleTheme} className="flex-1 flex items-center gap-2.5 px-2.5 py-2.5 rounded-[10px] text-[14.5px] font-medium text-[var(--ink-2)] hover:bg-[var(--surface)]">
             {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />} {theme === 'dark' ? t('themeLight') : t('themeDark')}
           </button>
