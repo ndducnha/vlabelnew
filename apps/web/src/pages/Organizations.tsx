@@ -147,19 +147,24 @@ export default function Organizations() {
                 <button className="btn btn-sm" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={15} /></button>
                 <button className="btn btn-sm btn-danger" title={t('delete')} onClick={() => { if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={15} /></button>
               </span>
-              {/* Mobile: gom vào menu "⋯" để không che tên */}
-              <div className="md:hidden relative">
-                <button className="btn btn-sm" aria-label={t('actions')} onClick={() => setMenu((v) => !v)}><MoreVertical size={16} /></button>
+              {/* Mobile: action sheet đặc, cố định, nổi trên cùng — không bị lớp dưới che */}
+              <div className="md:hidden">
+                <button className="btn btn-sm" aria-label={t('actions')} onClick={() => setMenu(true)}><MoreVertical size={16} /></button>
                 {menu && (
-                  <>
-                    <div className="fixed inset-0 z-[79]" onClick={() => setMenu(false)} />
-                    <div className="absolute right-0 top-full mt-1 z-[80] w-48 p-1 rounded-xl" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}>
-                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)] disabled:opacity-40" disabled={node.level === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'up' }); }}><ChevronUp size={16} />{t('promote')}</button>
-                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)] disabled:opacity-40" disabled={index === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'down' }); }}><ChevronDown size={16} />{t('demote')}</button>
-                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)]" onClick={() => { setMenu(false); setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={16} />{t('addSub')}</button>
-                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--danger)] hover:bg-[var(--danger-soft)]" onClick={() => { setMenu(false); if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={16} />{t('delete')}</button>
+                  <div className="fixed inset-0 z-[90] flex flex-col justify-end" onClick={() => setMenu(false)}>
+                    <div className="absolute inset-0" style={{ background: 'rgba(8,12,22,.5)' }} />
+                    <div className="relative m-2 mb-3 p-1.5 rounded-2xl anim-in" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }} onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2 px-2.5 pt-2 pb-1.5">
+                        <b className="text-sm text-[var(--ink)] flex-1 min-w-0" style={{ wordBreak: 'break-word' }}>{node.name}</b>
+                        <span className={`pill ${root ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: node.level + 1 })}</span>
+                      </div>
+                      <hr className="rule" style={{ margin: '2px 0 4px' }} />
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-3 rounded-xl text-[15px] text-left text-[var(--ink-2)] active:bg-[var(--surface)] disabled:opacity-40" disabled={node.level === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'up' }); }}><ChevronUp size={18} />{t('promote')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-3 rounded-xl text-[15px] text-left text-[var(--ink-2)] active:bg-[var(--surface)] disabled:opacity-40" disabled={index === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'down' }); }}><ChevronDown size={18} />{t('demote')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-3 rounded-xl text-[15px] text-left text-[var(--ink-2)] active:bg-[var(--surface)]" onClick={() => { setMenu(false); setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={18} />{t('addSub')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-3 rounded-xl text-[15px] text-left text-[var(--danger)] active:bg-[var(--danger-soft)]" onClick={() => { setMenu(false); if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={18} />{t('delete')}</button>
                     </div>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
