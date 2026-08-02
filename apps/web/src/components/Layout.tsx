@@ -1,7 +1,7 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
   Info, Network, Package, GitBranch, ClipboardEdit,
-  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles, LayoutList, Route as RouteIcon, List, X,
+  CalendarClock, Sun, Moon, LogOut, Users as UsersIcon, Tag, LayoutDashboard, FileText, Sparkles, LayoutList, Route as RouteIcon,
 } from '../lib/icons';
 import { useState } from 'react';
 import { useAuth } from '../lib/auth';
@@ -9,9 +9,10 @@ import { useT, LangToggle, type Messages } from '../lib/i18n';
 import { PERMISSIONS } from '@vlabel/shared';
 
 type NavItem = { to: string; key: string; icon: any; end?: boolean; perm?: string };
-const SECTIONS: { titleKey: string; items: NavItem[] }[] = [
+type Section = { titleKey: string; barKey: string; icon: any; items: NavItem[] };
+const SECTIONS: Section[] = [
   {
-    titleKey: 'sec.chung',
+    titleKey: 'sec.chung', barKey: 'bar.info', icon: Info,
     items: [
       { to: '/intro', key: 'nav.intro', icon: Info },
       { to: '/org', key: 'nav.org', icon: Network, perm: PERMISSIONS.ORGANIZATION_MANAGE },
@@ -20,7 +21,7 @@ const SECTIONS: { titleKey: string; items: NavItem[] }[] = [
     ],
   },
   {
-    titleKey: 'sec.trace',
+    titleKey: 'sec.trace', barKey: 'bar.trace', icon: LayoutList,
     items: [
       { to: '/trace-manage', key: 'nav.traceManage', icon: LayoutList, perm: PERMISSIONS.FLOW_MANAGE },
       { to: '/journey', key: 'nav.journey', icon: RouteIcon, perm: PERMISSIONS.PRODUCT_READ },
@@ -30,14 +31,14 @@ const SECTIONS: { titleKey: string; items: NavItem[] }[] = [
     ],
   },
   {
-    titleKey: 'sec.elabel',
+    titleKey: 'sec.elabel', barKey: 'bar.elabel', icon: Tag,
     items: [
       { to: '/elabels', key: 'nav.elabels', icon: Tag, perm: PERMISSIONS.PRODUCT_CREATE },
       { to: '/supplementary', key: 'nav.supp', icon: FileText, perm: PERMISSIONS.PRODUCT_READ },
     ],
   },
   {
-    titleKey: 'sec.vlabel',
+    titleKey: 'sec.vlabel', barKey: 'bar.vlabel', icon: Sparkles,
     items: [
       { to: '/helper', key: 'nav.helper', icon: Sparkles, perm: PERMISSIONS.PRODUCT_UPDATE },
       { to: '/', key: 'nav.workspace', icon: LayoutDashboard, end: true },
@@ -51,14 +52,16 @@ const MSG: Messages = {
     'nav.intro': 'Giới thiệu', 'nav.org': 'Tổ chức', 'nav.users': 'Người dùng', 'nav.products': 'Quản lý sản phẩm',
     'nav.traceManage': 'Quản lý', 'nav.journey': 'Hành trình', 'nav.flows': 'Luồng & Sự kiện', 'nav.entry': 'Kê khai', 'nav.tasks': 'Lịch truy xuất',
     'nav.elabels': 'Quản lý nhãn', 'nav.supp': 'Nhãn phụ', 'nav.helper': 'Trợ lý VLabel', 'nav.workspace': 'Không gian làm việc VLabel',
-    tagline: 'Số hóa niềm tin', themeLight: 'Giao diện sáng', themeDark: 'Giao diện tối', logout: 'Đăng xuất', menu: 'Menu', allMenu: 'Toàn bộ menu',
+    tagline: 'Số hóa niềm tin', themeLight: 'Giao diện sáng', themeDark: 'Giao diện tối', logout: 'Đăng xuất',
+    'bar.info': 'Thông tin', 'bar.trace': 'Truy xuất', 'bar.elabel': 'Nhãn', 'bar.vlabel': 'VLabel', exit: 'Thoát',
   },
   en: {
     'sec.chung': 'General', 'sec.trace': 'Traceability', 'sec.elabel': 'E-label', 'sec.vlabel': 'VLabel',
     'nav.intro': 'Introduction', 'nav.org': 'Organizations', 'nav.users': 'Users', 'nav.products': 'Products',
     'nav.traceManage': 'Manage', 'nav.journey': 'Journey', 'nav.flows': 'Flows & Events', 'nav.entry': 'Data entry', 'nav.tasks': 'Trace schedule',
     'nav.elabels': 'Labels', 'nav.supp': 'Supplementary', 'nav.helper': 'VLabel Assistant', 'nav.workspace': 'VLabel Workspace',
-    tagline: 'Digitizing trust', themeLight: 'Light theme', themeDark: 'Dark theme', logout: 'Log out', menu: 'Menu', allMenu: 'Full menu',
+    tagline: 'Digitizing trust', themeLight: 'Light theme', themeDark: 'Dark theme', logout: 'Log out',
+    'bar.info': 'Info', 'bar.trace': 'Trace', 'bar.elabel': 'Labels', 'bar.vlabel': 'VLabel', exit: 'Exit',
   },
 };
 
@@ -69,14 +72,16 @@ function initials(name: string) {
 export default function Layout() {
   const { user, logout, can } = useAuth();
   const nav = useNavigate();
+  const loc = useLocation();
   const t = useT(MSG);
   const [theme, setTheme] = useState(document.documentElement.getAttribute('data-theme') ?? 'light');
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [openSec, setOpenSec] = useState<string | null>(null);
 
   const sections = SECTIONS
     .map((s) => ({ ...s, items: s.items.filter((n) => !n.perm || can(n.perm)) }))
     .filter((s) => s.items.length > 0);
-  const flatItems = sections.flatMap((s) => s.items);
+  // Nhóm chứa trang đang mở (để tô sáng nút dưới cùng)
+  const activeSecKey = sections.find((s) => s.items.some((n) => (n.to === '/' ? loc.pathname === '/' : loc.pathname.startsWith(n.to))))?.titleKey ?? null;
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', next);
@@ -135,7 +140,6 @@ export default function Layout() {
         {/* Mobile topbar */}
         <div className="md:hidden flex items-center gap-2 h-14 px-3 sticky top-0 z-30"
           style={{ background: 'color-mix(in srgb,var(--bg) 85%,transparent)', backdropFilter: 'blur(14px)', borderBottom: '1px solid var(--border)' }}>
-          <button onClick={() => setMenuOpen(true)} className="btn btn-ghost btn-sm" aria-label={t('allMenu')}><List size={20} /></button>
           <img src="/logo.jpg" alt="" className="w-7 h-7 rounded-lg border" style={{ borderColor: 'var(--border)' }} />
           <b className="serif text-lg">Vlabel</b>
           <div className="flex-1" />
@@ -148,69 +152,49 @@ export default function Layout() {
         </main>
       </div>
 
-      {/* Bottom tabs (mobile): 4 mục nhanh + nút mở toàn bộ menu */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex px-1 pt-1.5 pb-[env(safe-area-inset-bottom)]"
+      {/* Sheet mục con của nhóm đang chọn (mobile) — nổi ngay trên thanh dưới */}
+      {openSec && (() => {
+        const sec = sections.find((s) => s.titleKey === openSec);
+        if (!sec) return null;
+        return (
+          <div className="md:hidden fixed inset-0 z-[65]">
+            <div className="absolute inset-0" style={{ background: 'rgba(8,12,22,.4)' }} onClick={() => setOpenSec(null)} />
+            <div className="absolute inset-x-0 anim-in" style={{ bottom: 'calc(62px + env(safe-area-inset-bottom))' }}>
+              <div className="mx-2 mb-2 p-2 rounded-[16px]" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}>
+                <div className="px-2.5 pt-1.5 pb-1.5 text-[10px] font-medium uppercase text-[var(--faint)]" style={{ fontFamily: 'var(--mono)', letterSpacing: '1.4px' }}>{t(sec.titleKey)}</div>
+                {sec.items.map((n) => (
+                  <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setOpenSec(null)}
+                    className="flex items-center gap-3 px-2.5 py-3 rounded-[11px] text-[15px] font-medium transition-colors"
+                    style={({ isActive }) => isActive
+                      ? { background: 'var(--accent-soft)', color: 'var(--accent-ink)', boxShadow: 'inset 3px 0 0 var(--accent)' }
+                      : { color: 'var(--ink-2)' }}>
+                    <n.icon size={20} /> {t(n.key)}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Thanh dưới (mobile): 4 nhóm menu + Thoát. Bấm nhóm để mở các mục con. */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-[66] flex px-1 pt-1.5 pb-[env(safe-area-inset-bottom)]"
         style={{ height: 62, background: 'color-mix(in srgb,var(--bg) 92%,transparent)', backdropFilter: 'blur(16px)', borderTop: '1px solid var(--border)' }}>
-        {flatItems.slice(0, 4).map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end}
-            className="flex-1 flex flex-col items-center gap-0.5 py-1 text-[10.5px] font-semibold"
-            style={({ isActive }) => ({ color: isActive ? 'var(--accent)' : 'var(--muted)' })}>
-            <n.icon size={22} /> {t(n.key)}
-          </NavLink>
-        ))}
-        <button onClick={() => setMenuOpen(true)} className="flex-1 flex flex-col items-center gap-0.5 py-1 text-[10.5px] font-semibold" style={{ color: menuOpen ? 'var(--accent)' : 'var(--muted)' }}>
-          <List size={22} /> {t('menu')}
+        {sections.map((s) => {
+          const on = openSec === s.titleKey || (!openSec && activeSecKey === s.titleKey);
+          return (
+            <button key={s.titleKey} onClick={() => setOpenSec((cur) => (cur === s.titleKey ? null : s.titleKey))}
+              className="flex-1 flex flex-col items-center gap-0.5 py-1 text-[10.5px] font-semibold"
+              style={{ color: on ? 'var(--accent)' : 'var(--muted)' }}>
+              <s.icon size={22} /> {t(s.barKey)}
+            </button>
+          );
+        })}
+        <button onClick={() => { setOpenSec(null); logout(); nav('/login'); }}
+          className="flex-1 flex flex-col items-center gap-0.5 py-1 text-[10.5px] font-semibold" style={{ color: 'var(--muted)' }}>
+          <LogOut size={22} /> {t('exit')}
         </button>
       </nav>
-
-      {/* Drawer TOÀN BỘ menu (mobile) */}
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-[70]">
-          <div className="absolute inset-0" style={{ background: 'rgba(8,12,22,.45)' }} onClick={() => setMenuOpen(false)} />
-          <aside className="absolute top-0 left-0 h-full w-[300px] max-w-[86vw] flex flex-col p-3 anim-in"
-            style={{ background: 'var(--bg)', borderRight: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}>
-            <div className="flex items-center gap-2.5 px-1 pt-1 pb-3">
-              <img src="/logo.jpg" alt="Vlabel" className="w-8 h-8 rounded-[9px] border" style={{ borderColor: 'var(--border)' }} />
-              <div className="flex-1">
-                <b className="serif text-[18px] leading-none">Vlabel</b>
-                <div className="text-[9px] font-medium uppercase tracking-wider text-[var(--faint)] mt-1" style={{ fontFamily: 'var(--mono)' }}>{t('allMenu')}</div>
-              </div>
-              <button onClick={() => setMenuOpen(false)} className="btn btn-ghost btn-sm" aria-label="Đóng"><X size={18} /></button>
-            </div>
-            <nav className="flex flex-col gap-0.5 flex-1 overflow-y-auto min-h-0 -mr-1 pr-1">
-              {sections.map((s) => (
-                <div key={s.titleKey} className="flex flex-col gap-0.5 mb-1.5">
-                  <div className="px-2.5 pt-2.5 pb-1 text-[10px] font-medium uppercase text-[var(--faint)]" style={{ fontFamily: 'var(--mono)', letterSpacing: '1.4px' }}>{t(s.titleKey)}</div>
-                  {s.items.map((n) => (
-                    <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-2.5 px-2.5 py-2.5 rounded-[11px] text-[15px] font-medium transition-colors"
-                      style={({ isActive }) => isActive
-                        ? { background: 'var(--accent-soft)', color: 'var(--accent-ink)', boxShadow: 'inset 3px 0 0 var(--accent)' }
-                        : { color: 'var(--ink-2)' }}>
-                      <n.icon size={20} /> {t(n.key)}
-                    </NavLink>
-                  ))}
-                </div>
-              ))}
-            </nav>
-            <div className="flex items-center gap-1.5 mt-1.5 pt-1.5" style={{ borderTop: '1px solid var(--border)' }}>
-              <button onClick={toggleTheme} className="flex-1 flex items-center gap-2.5 px-2.5 py-2.5 rounded-[10px] text-[14.5px] font-medium text-[var(--ink-2)] hover:bg-[var(--surface)]">
-                {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />} {theme === 'dark' ? t('themeLight') : t('themeDark')}
-              </button>
-              <LangToggle className="btn btn-sm" />
-            </div>
-            <div className="flex items-center gap-2.5 p-2 rounded-xl mt-1" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-              <div className="serif w-8 h-8 rounded-full grid place-items-center text-sm font-bold"
-                style={{ color: 'var(--accent-contrast)', background: 'linear-gradient(135deg,var(--accent),var(--accent-2))' }}>{initials(user?.fullName ?? '')}</div>
-              <div className="flex-1 min-w-0">
-                <b className="block text-[13.5px] truncate">{user?.fullName}</b>
-                <span className="text-[11.5px] text-[var(--muted)]">{user?.roles?.[0]}</span>
-              </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => { setMenuOpen(false); logout(); nav('/login'); }} title={t('logout')}><LogOut size={16} /></button>
-            </div>
-          </aside>
-        </div>
-      )}
     </div>
   );
 }
