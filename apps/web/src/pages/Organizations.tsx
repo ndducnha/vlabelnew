@@ -112,9 +112,9 @@ export default function Organizations() {
     const root = node.level === 0;
     return (
       <div className="anim-in">
-        <div className="group flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface)] transition-colors">
+        <div className="group flex items-start gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface)] transition-colors">
           <button
-            className="w-6 h-6 grid place-items-center rounded-md flex-none text-[var(--faint)] hover:text-[var(--ink)] hover:bg-[var(--card)] disabled:opacity-0"
+            className="w-6 h-6 grid place-items-center rounded-md flex-none mt-1 text-[var(--faint)] hover:text-[var(--ink)] hover:bg-[var(--card)] disabled:opacity-0"
             style={{ transform: open ? 'rotate(90deg)' : '', transition: 'transform .15s, color .15s, background .15s' }}
             disabled={!has}
             aria-label={open ? t('collapse') : t('expand')}
@@ -123,29 +123,32 @@ export default function Organizations() {
             {has ? <ChevronRight size={16} /> : null}
           </button>
           <span
-            className="iconbox flex-none"
+            className="iconbox flex-none mt-0.5"
             style={root
               ? { width: 34, height: 34 }
               : { width: 34, height: 34, background: 'var(--surface)', color: 'var(--muted)' }}
           >
             <Icon size={18} />
           </span>
+          {/* Tên chiếm trọn chiều rộng (tự xuống hàng); mã + cấp nằm dòng dưới */}
           <div className="flex-1 min-w-0">
-            <div className="truncate text-sm font-semibold text-[var(--ink)]">{node.name}</div>
-            <div className="truncate text-xs mono text-[var(--faint)]">{node.code}</div>
+            <div className="text-sm font-semibold text-[var(--ink)] leading-snug" style={{ wordBreak: 'break-word' }}>{node.name}</div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {node.code ? <span className="text-xs mono text-[var(--faint)] break-all">{node.code}</span> : null}
+              <span className={`pill ${root ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: node.level + 1 })}</span>
+            </div>
           </div>
-          <span className={`pill ${root ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: node.level + 1 })}</span>
           {canManage && (
-            <>
+            <div className="flex-none mt-0.5">
               {/* Desktop: nút inline hiện khi rê chuột */}
-              <span className="hidden md:flex flex-none gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="hidden md:flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button className="btn btn-sm" title={t('promote')} disabled={node.level === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'up' })}><ChevronUp size={15} /></button>
                 <button className="btn btn-sm" title={t('demote')} disabled={index === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'down' })}><ChevronDown size={15} /></button>
                 <button className="btn btn-sm" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={15} /></button>
                 <button className="btn btn-sm btn-danger" title={t('delete')} onClick={() => { if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={15} /></button>
               </span>
               {/* Mobile: gom vào menu "⋯" để không che tên */}
-              <div className="md:hidden relative flex-none">
+              <div className="md:hidden relative">
                 <button className="btn btn-sm" aria-label={t('actions')} onClick={() => setMenu((v) => !v)}><MoreVertical size={16} /></button>
                 {menu && (
                   <>
@@ -159,7 +162,7 @@ export default function Organizations() {
                   </>
                 )}
               </div>
-            </>
+            </div>
           )}
         </div>
         {has && open && <div className="ml-5 pl-3" style={{ borderLeft: '1px solid var(--hairline)' }}>{node.children.map((c, i, arr) => <Row key={c.id} node={c} index={i} count={arr.length} />)}</div>}
@@ -191,14 +194,16 @@ export default function Organizations() {
             : matches.map((n) => {
                 const Icon = n.level === 0 ? Building2 : n.type === 'FACTORY' ? Factory : FolderTree;
                 return (
-                  <div key={n.id} className="flex items-center gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface)] anim-in">
-                    <span className="iconbox flex-none" style={{ width: 34, height: 34, background: 'var(--surface)', color: 'var(--muted)' }}><Icon size={18} /></span>
+                  <div key={n.id} className="flex items-start gap-2.5 px-2 py-2 rounded-xl hover:bg-[var(--surface)] anim-in">
+                    <span className="iconbox flex-none mt-0.5" style={{ width: 34, height: 34, background: 'var(--surface)', color: 'var(--muted)' }}><Icon size={18} /></span>
                     <div className="flex-1 min-w-0">
-                      <div className="truncate text-sm font-semibold text-[var(--ink)]">{n.name}</div>
-                      <div className="truncate text-xs mono text-[var(--faint)]">{n.code}</div>
+                      <div className="text-sm font-semibold text-[var(--ink)] leading-snug" style={{ wordBreak: 'break-word' }}>{n.name}</div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        {n.code ? <span className="text-xs mono text-[var(--faint)] break-all">{n.code}</span> : null}
+                        <span className={`pill ${n.level === 0 ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: n.level + 1 })}</span>
+                      </div>
                     </div>
-                    <span className={`pill ${n.level === 0 ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: n.level + 1 })}</span>
-                    {canManage && <button className="btn btn-sm flex-none" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: n.id }); }}><Plus size={15} /></button>}
+                    {canManage && <button className="btn btn-sm flex-none mt-0.5" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: n.id }); }}><Plus size={15} /></button>}
                   </div>
                 );
               })}
