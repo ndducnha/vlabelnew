@@ -24,7 +24,8 @@ const MSG: Messages = {
     dataSynced: 'ĐÃ ĐỒNG BỘ DỮ LIỆU', syncedPortalSystem: 'Đã đồng bộ lên Cổng thông tin truy xuất nguồn gốc hàng hóa quốc gia và Hệ thống Nhãn điện tử Quốc gia.',
     secGoodsGroup: 'NHÓM HÀNG HÓA', secProductImages: 'ẢNH SẢN PHẨM', secCerts: 'HỒ SƠ CHỨNG CHỈ', certLabel: 'Chứng nhận {n}', view: 'XEM',
     secSuppMandatory: 'NHÃN PHỤ · BẮT BUỘC', suppTitle: 'NHÃN PHỤ', suppSubtitle: 'NHÃN BỔ SUNG',
-    npNote1: 'Nhãn phụ thể hiện bằng tiếng Việt theo ', npDecree: 'Nghị định 43/2017/NĐ-CP', npNote2: ' về nhãn hàng hóa.',
+    secLabelContent: 'NỘI DUNG NHÃN',
+    npNote1: 'Nội dung nhãn thể hiện bằng tiếng Việt theo ', npDecree: 'Nghị định 43/2017/NĐ-CP', npNote2: ' về nhãn hàng hóa.',
     secSupplyChain: 'CHUỖI CUNG ỨNG MINH BẠCH', traceTitleA: 'Truy xuất', traceTitleB: 'nguồn gốc',
     noTraceData: 'Chưa có dữ liệu truy xuất công khai cho lô này.',
     nationalPortalCaps: 'CỔNG QUỐC GIA', syncedNationalPortal: 'Đã đồng bộ Cổng truy xuất Quốc gia', lookupNational: 'Tra cứu trên Cổng quốc gia',
@@ -47,7 +48,8 @@ const MSG: Messages = {
     dataSynced: 'DATA SYNCED', syncedPortalSystem: 'Synced to the National Goods Traceability Portal and the National E-label System.',
     secGoodsGroup: 'GOODS GROUP', secProductImages: 'PRODUCT IMAGES', secCerts: 'CERTIFICATES', certLabel: 'Certificate {n}', view: 'VIEW',
     secSuppMandatory: 'SUPPLEMENTARY LABEL · MANDATORY', suppTitle: 'SUPPLEMENTARY LABEL', suppSubtitle: 'ADDITIONAL LABEL',
-    npNote1: 'The supplementary label is presented in Vietnamese per ', npDecree: 'Decree 43/2017/ND-CP', npNote2: ' on goods labeling.',
+    secLabelContent: 'LABEL CONTENT',
+    npNote1: 'The label content is presented in Vietnamese per ', npDecree: 'Decree 43/2017/ND-CP', npNote2: ' on goods labeling.',
     secSupplyChain: 'TRANSPARENT SUPPLY CHAIN', traceTitleA: 'Product', traceTitleB: 'traceability',
     noTraceData: 'No public traceability data for this batch yet.',
     nationalPortalCaps: 'NATIONAL PORTAL', syncedNationalPortal: 'Synced to the National Traceability Portal', lookupNational: 'Look up on the National Portal',
@@ -75,7 +77,7 @@ export default function PublicTrace() {
   const [sp] = useSearchParams();
   const lot = sp.get('lot') ?? undefined;
   const serial = sp.get('serial') ?? undefined;
-  const [manualTab, setManualTab] = useState<'sp' | 'dn' | 'tx' | 'np' | null>(null);
+  const [manualTab, setManualTab] = useState<'sp' | 'dn' | 'tx' | null>(null);
   const t = useT(MSG);
   const { lang, setLang } = useLang();
 
@@ -104,12 +106,11 @@ export default function PublicTrace() {
   const hasTx = (d.timeline?.length ?? 0) > 0;
   const synced = hasLabel || hasTx || hasNp;   // có nội dung đã công bố = đã đồng bộ Quốc gia
 
-  // Tab mặc định theo ưu tiên: nhãn phụ > nhãn điện tử > truy xuất; đưa tab đó lên đầu
-  const defaultTab: 'sp' | 'dn' | 'tx' | 'np' = hasNp ? 'np' : hasLabel ? 'sp' : hasTx ? 'tx' : 'sp';
+  // Nhãn phụ = nhãn điện tử với người xem: gộp chung một tab "Nhãn điện tử".
+  const defaultTab: 'sp' | 'dn' | 'tx' = (hasLabel || hasNp) ? 'sp' : hasTx ? 'tx' : 'sp';
   const tab = manualTab ?? defaultTab;
   const baseTabs = [
     { k: 'sp' as const, label: t('tabElabel') },
-    ...(hasNp ? [{ k: 'np' as const, label: t('tabSupp') }] : []),
     ...(hasTx ? [{ k: 'tx' as const, label: t('tabTrace') }] : []),
     { k: 'dn' as const, label: t('tabBusiness') },
   ];
@@ -263,6 +264,18 @@ export default function PublicTrace() {
               ]} />
             </Section>
 
+            {d.supplementary && (
+              <Section title={t('secLabelContent')}>
+                <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 1px 2px rgba(20,20,30,.04)' }}>
+                  <div style={{ padding: '4px 16px 14px' }} className="np-content" dangerouslySetInnerHTML={{ __html: d.supplementary.html }} />
+                  <div style={{ background: '#f7f8fc', borderTop: `1px solid ${C.dash}`, padding: '11px 16px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.navy, marginTop: 6, flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('npNote1')}<b style={{ color: C.navy }}>{t('npDecree')}</b>{t('npNote2')}</span>
+                  </div>
+                </div>
+              </Section>
+            )}
+
             {(label?.usageInstructions || label?.storageInstructions) && (
               <Section title={t('secInstructions')}>
                 <div style={cardBox}>
@@ -324,25 +337,6 @@ export default function PublicTrace() {
                 </div>
               </Section>
             )}
-          </div>
-        )}
-
-        {/* PANEL: NHÃN PHỤ */}
-        {tab === 'np' && d.supplementary && (
-          <div style={{ padding: '20px 16px 8px', display: 'flex', flexDirection: 'column', gap: 16 }} className="anim-in">
-            <Section title={t('secSuppMandatory')}>
-              <div style={{ background: C.card, border: `1.5px solid ${C.navy}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 14px 34px -20px rgba(20,20,40,.22)' }}>
-                <div style={{ background: C.navy, color: '#fff', padding: '14px 16px' }}>
-                  <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, lineHeight: 1 }}>{t('suppTitle')}</div>
-                  <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: '#aebbe0', marginTop: 4 }}>{t('suppSubtitle')}</div>
-                </div>
-                <div style={{ padding: '4px 16px 14px' }} className="np-content" dangerouslySetInnerHTML={{ __html: d.supplementary.html }} />
-                <div style={{ background: '#f7f8fc', borderTop: `1px solid ${C.dash}`, padding: '11px 16px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.navy, marginTop: 6, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('npNote1')}<b style={{ color: C.navy }}>{t('npDecree')}</b>{t('npNote2')}</span>
-                </div>
-              </div>
-            </Section>
           </div>
         )}
 
