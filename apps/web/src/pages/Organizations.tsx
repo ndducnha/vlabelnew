@@ -151,9 +151,9 @@ export default function Organizations() {
               <div className="md:hidden">
                 <button className="btn btn-sm" aria-label={t('actions')} onClick={() => setMenu(true)}><MoreVertical size={16} /></button>
                 {menu && (
-                  <div className="fixed inset-0 z-[90] flex flex-col justify-end" onClick={() => setMenu(false)}>
-                    <div className="absolute inset-0" style={{ background: 'rgba(8,12,22,.5)' }} />
-                    <div className="relative m-2 mb-3 p-1.5 rounded-2xl anim-in" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }} onClick={(e) => e.stopPropagation()}>
+                  <div className="fixed inset-0 z-[90] flex flex-col justify-end">
+                    <button type="button" aria-label={t('cancel')} className="absolute inset-0 w-full h-full cursor-default" style={{ background: 'rgba(8,12,22,.5)' }} onClick={() => setMenu(false)} />
+                    <div className="relative m-2 mb-3 p-1.5 rounded-2xl anim-in" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}>
                       <div className="flex items-center gap-2 px-2.5 pt-2 pb-1.5">
                         <b className="text-sm text-[var(--ink)] flex-1 min-w-0" style={{ wordBreak: 'break-word' }}>{node.name}</b>
                         <span className={`pill ${root ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: node.level + 1 })}</span>
