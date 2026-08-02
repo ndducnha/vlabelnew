@@ -5,10 +5,75 @@ import { api } from '../lib/api';
 import { PageHead, Spinner, EmptyState, SegmentedControl, Paginator, usePaged } from '../components/ui';
 import type { Product, Flow, TraceTask } from '@vlabel/shared';
 import { TableRow, CardRow, ProductDetail } from './TraceManage.parts';
+import { useT, type Messages } from '../lib/i18n';
+
+const MSG: Messages = {
+  vi: {
+    eyebrow: 'Truy xuất nguồn gốc',
+    title: 'Quản lý truy xuất',
+    subtitle: 'Tổng quan sản phẩm, Luồng, phân công và lịch truy xuất',
+    searchPh: 'Tìm tên / GTIN…',
+    kTotal: 'Tổng sản phẩm',
+    kNoFlow: 'Chưa có Luồng',
+    kActiveFlow: 'Luồng hoạt động',
+    kDueSoon: 'Sắp đến hạn',
+    kOverdue: 'Quá hạn',
+    kOpenTasks: 'Lịch chưa xong',
+    fAll: 'Tất cả',
+    fHas: 'Có Luồng',
+    fNone: 'Chưa Luồng',
+    stAll: 'Mọi trạng thái',
+    stNoflow: 'Chưa có Luồng',
+    stReady: 'Sẵn sàng',
+    stActive: 'Đang khai báo',
+    stOverdue: 'Có lịch quá hạn',
+    stDone: 'Đã hoàn thành',
+    emptyTitle: 'Không có sản phẩm',
+    emptyHint: 'Thử bỏ bớt bộ lọc hoặc tạo sản phẩm ở Quản lý sản phẩm.',
+    hIdx: 'Mục',
+    hProduct: 'Sản phẩm',
+    hFlow: 'Luồng',
+    hBatch: 'Lô',
+    hSched: 'Lịch',
+    hProgress: 'Tiến độ',
+    hStatus: 'Trạng thái',
+  },
+  en: {
+    eyebrow: 'Traceability',
+    title: 'Trace management',
+    subtitle: 'Overview of products, Flows, assignments and trace schedule',
+    searchPh: 'Search name / GTIN…',
+    kTotal: 'Total products',
+    kNoFlow: 'No Flow yet',
+    kActiveFlow: 'Active Flows',
+    kDueSoon: 'Due soon',
+    kOverdue: 'Overdue',
+    kOpenTasks: 'Schedules not done',
+    fAll: 'All',
+    fHas: 'Has Flow',
+    fNone: 'No Flow',
+    stAll: 'All statuses',
+    stNoflow: 'No Flow yet',
+    stReady: 'Ready',
+    stActive: 'Declaring',
+    stOverdue: 'Has overdue schedule',
+    stDone: 'Completed',
+    emptyTitle: 'No products',
+    emptyHint: 'Try removing some filters or create a product in Product management.',
+    hIdx: 'No.',
+    hProduct: 'Product',
+    hFlow: 'Flow',
+    hBatch: 'Batch',
+    hSched: 'Schedule',
+    hProgress: 'Progress',
+    hStatus: 'Status',
+  },
+};
 
 const daysBetween = (a: Date, b: Date) => Math.ceil((a.getTime() - b.getTime()) / 864e5);
 
 export default function TraceManage() {
+  const t = useT(MSG);
   const products = useQuery<Product[]>({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
   const elabels = useQuery({ queryKey: ['elabels', ''], queryFn: () => api.get('/elabels').then((r) => r.data) });
   const tasks = useQuery<TraceTask[]>({ queryKey: ['trace-tasks', false], queryFn: () => api.get('/trace-tasks').then((r) => r.data) });
@@ -63,11 +128,11 @@ export default function TraceManage() {
 
   return (
     <>
-      <PageHead eyebrow="Truy xuất nguồn gốc" title="Quản lý truy xuất" subtitle="Tổng quan sản phẩm, Luồng, phân công và lịch truy xuất"
+      <PageHead eyebrow={t('eyebrow')} title={t('title')} subtitle={t('subtitle')}
         actions={
           <div className="flex items-center gap-2 rounded-full px-3.5 h-10" style={{ border: '1px solid var(--border)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
-            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder="Tìm tên / GTIN…" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
+            <input className="bg-transparent outline-none text-sm" style={{ width: 200 }} placeholder={t('searchPh')} value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} />
           </div>
         } />
 
@@ -75,12 +140,12 @@ export default function TraceManage() {
       <div className="rule rule-strong" style={{ margin: '0 0 0' }} />
       <div className="kpi grid-cols-2 lg:grid-cols-6 mb-6" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
         {[
-          { icon: <Package size={13} />, label: 'Tổng sản phẩm', value: totalProducts, color: 'var(--ink)' },
-          { icon: <GitBranch size={13} />, label: 'Chưa có Luồng', value: noFlow, color: noFlow ? 'var(--warn)' : 'var(--ink)' },
-          { icon: <ShieldCheck size={13} />, label: 'Luồng hoạt động', value: activeFlows, color: 'var(--ink)' },
-          { icon: <CalendarClock size={13} />, label: 'Sắp đến hạn', value: dueSoon, color: dueSoon ? 'var(--warn)' : 'var(--ink)' },
-          { icon: <AlertTriangle size={13} />, label: 'Quá hạn', value: overdueTasks, color: overdueTasks ? 'var(--danger)' : 'var(--ink)' },
-          { icon: <ListChecks size={13} />, label: 'Lịch chưa xong', value: openTasks, color: 'var(--ink)' },
+          { icon: <Package size={13} />, label: t('kTotal'), value: totalProducts, color: 'var(--ink)' },
+          { icon: <GitBranch size={13} />, label: t('kNoFlow'), value: noFlow, color: noFlow ? 'var(--warn)' : 'var(--ink)' },
+          { icon: <ShieldCheck size={13} />, label: t('kActiveFlow'), value: activeFlows, color: 'var(--ink)' },
+          { icon: <CalendarClock size={13} />, label: t('kDueSoon'), value: dueSoon, color: dueSoon ? 'var(--warn)' : 'var(--ink)' },
+          { icon: <AlertTriangle size={13} />, label: t('kOverdue'), value: overdueTasks, color: overdueTasks ? 'var(--danger)' : 'var(--ink)' },
+          { icon: <ListChecks size={13} />, label: t('kOpenTasks'), value: openTasks, color: 'var(--ink)' },
         ].map((k) => (
           <div key={k.label}>
             <div className="k">{k.icon}{k.label}</div>
@@ -91,27 +156,27 @@ export default function TraceManage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2 mb-5">
-        <SegmentedControl value={flowFilter} onChange={(v) => { setFlowFilter(v); setPage(1); }} options={[{ value: 'all', label: 'Tất cả' }, { value: 'has', label: 'Có Luồng' }, { value: 'none', label: 'Chưa Luồng' }]} />
+        <SegmentedControl value={flowFilter} onChange={(v) => { setFlowFilter(v); setPage(1); }} options={[{ value: 'all', label: t('fAll') }, { value: 'has', label: t('fHas') }, { value: 'none', label: t('fNone') }]} />
         <select className="input" style={{ width: 180 }} value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}>
-          <option value="all">Mọi trạng thái</option>
-          <option value="noflow">Chưa có Luồng</option>
-          <option value="ready">Sẵn sàng</option>
-          <option value="active">Đang khai báo</option>
-          <option value="overdue">Có lịch quá hạn</option>
-          <option value="done">Đã hoàn thành</option>
+          <option value="all">{t('stAll')}</option>
+          <option value="noflow">{t('stNoflow')}</option>
+          <option value="ready">{t('stReady')}</option>
+          <option value="active">{t('stActive')}</option>
+          <option value="overdue">{t('stOverdue')}</option>
+          <option value="done">{t('stDone')}</option>
         </select>
       </div>
 
       {loading ? <Spinner /> : paged.total === 0 ? (
-        <div className="card"><EmptyState title="Không có sản phẩm" hint="Thử bỏ bớt bộ lọc hoặc tạo sản phẩm ở Quản lý sản phẩm." /></div>
+        <div className="card"><EmptyState title={t('emptyTitle')} hint={t('emptyHint')} /></div>
       ) : (
         <>
           {/* Sổ cái cho desktop */}
           <div className="hidden lg:block anim-in overflow-x-auto">
             <table className="ledger text-sm">
               <thead><tr>
-                <th style={{ width: 52 }}>Mục</th>
-                {['Sản phẩm', 'Luồng', 'Lô', 'Lịch', 'Tiến độ', 'Trạng thái'].map((h) => <th key={h}>{h}</th>)}
+                <th style={{ width: 52 }}>{t('hIdx')}</th>
+                {[t('hProduct'), t('hFlow'), t('hBatch'), t('hSched'), t('hProgress'), t('hStatus')].map((h) => <th key={h}>{h}</th>)}
               </tr></thead>
               <tbody>
                 {paged.rows.map((r: any, i: number) => <TableRow key={r.id} r={r} index={(paged.page - 1) * 10 + i + 1} onOpen={() => setDetail(r)} />)}

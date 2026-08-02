@@ -4,8 +4,58 @@ import { useQuery } from '@tanstack/react-query';
 import { ShieldCheck, Check, Building2, FileText, MapPin, Globe, AlertTriangle, Award, ExternalLink } from '../lib/icons';
 import { api, fileUrl } from '../lib/api';
 import { Spinner } from '../components/ui';
+import { useT, useLang, type Messages } from '../lib/i18n';
 
-const RISK = ['Chưa xác định', 'Cao', 'Trung bình', 'Thấp'];
+const RISK = ['risk0', 'risk1', 'risk2', 'risk3'];
+
+const MSG: Messages = {
+  vi: {
+    loading: 'Đang xác thực…', notFound: 'Không tìm thấy sản phẩm', elabelCaps: 'NHÃN ĐIỆN TỬ',
+    verifiedBy: 'ĐÃ XÁC THỰC BỞI VLABEL', syncedNational: 'Đã đồng bộ thông tin về cơ sở dữ liệu Quốc gia',
+    chipTrace: 'Truy xuất nguồn gốc', chipElabel: 'Nhãn điện tử', verifiedInfo: 'Thông tin nhãn điện tử đã được xác thực trên nền tảng Vlabel.',
+    providedBy: 'CUNG CẤP BỞI', productImage: 'ẢNH SẢN PHẨM', statNetContent: 'ĐỊNH LƯỢNG', statBatch: 'MÃ LÔ', statMfg: 'NGÀY SX',
+    recalledTitle: 'Sản phẩm đã bị thu hồi', reason: 'Lý do:',
+    tabElabel: 'Nhãn điện tử', tabSupp: 'Nhãn phụ', tabTrace: 'Truy xuất', tabBusiness: 'Doanh nghiệp',
+    secProductInfo: 'THÔNG TIN SẢN PHẨM', rowName: 'Tên sản phẩm', rowBrand: 'Nhãn hiệu', rowLot: 'Mã lô', rowOrigin: 'Xuất xứ',
+    rowIngredients: 'Thành phần', rowNetWeight: 'Khối lượng tịnh', rowHs: 'Mã HS', rowMarket: 'Thị trường', rowSupplier: 'Nhà cung cấp',
+    rowRisk: 'Phân loại rủi ro', rowMfgDate: 'Ngày sản xuất',
+    risk0: 'Chưa xác định', risk1: 'Cao', risk2: 'Trung bình', risk3: 'Thấp',
+    secInstructions: 'HƯỚNG DẪN', usageLbl: 'Sử dụng: ', storageLbl: 'Bảo quản: ', safetyTitle: 'Cảnh báo an toàn',
+    dataSynced: 'ĐÃ ĐỒNG BỘ DỮ LIỆU', syncedPortalSystem: 'Đã đồng bộ lên Cổng thông tin truy xuất nguồn gốc hàng hóa quốc gia và Hệ thống Nhãn điện tử Quốc gia.',
+    secGoodsGroup: 'NHÓM HÀNG HÓA', secProductImages: 'ẢNH SẢN PHẨM', secCerts: 'HỒ SƠ CHỨNG CHỈ', certLabel: 'Chứng nhận {n}', view: 'XEM',
+    secSuppMandatory: 'NHÃN PHỤ · BẮT BUỘC', suppTitle: 'NHÃN PHỤ', suppSubtitle: 'NHÃN BỔ SUNG',
+    npNote1: 'Nhãn phụ thể hiện bằng tiếng Việt theo ', npDecree: 'Nghị định 43/2017/NĐ-CP', npNote2: ' về nhãn hàng hóa.',
+    secSupplyChain: 'CHUỖI CUNG ỨNG MINH BẠCH', traceTitleA: 'Truy xuất', traceTitleB: 'nguồn gốc',
+    noTraceData: 'Chưa có dữ liệu truy xuất công khai cho lô này.',
+    nationalPortalCaps: 'CỔNG QUỐC GIA', syncedNationalPortal: 'Đã đồng bộ Cổng truy xuất Quốc gia', lookupNational: 'Tra cứu trên Cổng quốc gia',
+    secResponsible: 'DOANH NGHIỆP CHỊU TRÁCH NHIỆM', repLbl: 'Đại diện: ', rowOrgName: 'Tên tổ chức', rowTaxCode: 'Mã số thuế', rowAddress: 'Địa chỉ', rowRep: 'Người đại diện',
+    noBusiness: 'Chưa có thông tin doanh nghiệp.', addressCaps: 'ĐỊA CHỈ',
+    footerTagline: 'Nền tảng nhãn điện tử & truy xuất nguồn gốc', footerRights: '© 2026 Vlabel. Bảo lưu mọi quyền.',
+  },
+  en: {
+    loading: 'Verifying…', notFound: 'Product not found', elabelCaps: 'E-LABEL',
+    verifiedBy: 'VERIFIED BY VLABEL', syncedNational: 'Synced to the National database',
+    chipTrace: 'Traceability', chipElabel: 'E-label', verifiedInfo: 'E-label information has been verified on the Vlabel platform.',
+    providedBy: 'PROVIDED BY', productImage: 'PRODUCT IMAGE', statNetContent: 'NET CONTENT', statBatch: 'BATCH CODE', statMfg: 'MFG DATE',
+    recalledTitle: 'Product has been recalled', reason: 'Reason:',
+    tabElabel: 'E-label', tabSupp: 'Supplementary', tabTrace: 'Traceability', tabBusiness: 'Business',
+    secProductInfo: 'PRODUCT INFORMATION', rowName: 'Product name', rowBrand: 'Brand', rowLot: 'Batch code', rowOrigin: 'Origin',
+    rowIngredients: 'Ingredients', rowNetWeight: 'Net weight', rowHs: 'HS code', rowMarket: 'Market', rowSupplier: 'Supplier',
+    rowRisk: 'Risk classification', rowMfgDate: 'Manufacturing date',
+    risk0: 'Undetermined', risk1: 'High', risk2: 'Medium', risk3: 'Low',
+    secInstructions: 'INSTRUCTIONS', usageLbl: 'Usage: ', storageLbl: 'Storage: ', safetyTitle: 'Safety warnings',
+    dataSynced: 'DATA SYNCED', syncedPortalSystem: 'Synced to the National Goods Traceability Portal and the National E-label System.',
+    secGoodsGroup: 'GOODS GROUP', secProductImages: 'PRODUCT IMAGES', secCerts: 'CERTIFICATES', certLabel: 'Certificate {n}', view: 'VIEW',
+    secSuppMandatory: 'SUPPLEMENTARY LABEL · MANDATORY', suppTitle: 'SUPPLEMENTARY LABEL', suppSubtitle: 'ADDITIONAL LABEL',
+    npNote1: 'The supplementary label is presented in Vietnamese per ', npDecree: 'Decree 43/2017/ND-CP', npNote2: ' on goods labeling.',
+    secSupplyChain: 'TRANSPARENT SUPPLY CHAIN', traceTitleA: 'Product', traceTitleB: 'traceability',
+    noTraceData: 'No public traceability data for this batch yet.',
+    nationalPortalCaps: 'NATIONAL PORTAL', syncedNationalPortal: 'Synced to the National Traceability Portal', lookupNational: 'Look up on the National Portal',
+    secResponsible: 'RESPONSIBLE BUSINESS', repLbl: 'Representative: ', rowOrgName: 'Organization name', rowTaxCode: 'Tax code', rowAddress: 'Address', rowRep: 'Representative',
+    noBusiness: 'No business information yet.', addressCaps: 'ADDRESS',
+    footerTagline: 'E-label & traceability platform', footerRights: '© 2026 Vlabel. All rights reserved.',
+  },
+};
 
 // Bảng màu editorial "hộ chiếu sản phẩm"
 const C = {
@@ -26,13 +76,15 @@ export default function PublicTrace() {
   const lot = sp.get('lot') ?? undefined;
   const serial = sp.get('serial') ?? undefined;
   const [manualTab, setManualTab] = useState<'sp' | 'dn' | 'tx' | 'np' | null>(null);
+  const t = useT(MSG);
+  const { lang, setLang } = useLang();
 
   const q = useQuery({ queryKey: ['trace', gtin, lot, serial], queryFn: () => api.get(`/public/t/${gtin}`, { params: { lot, serial } }).then((r) => r.data) });
 
-  if (q.isLoading) return <div style={{ background: C.outer, minHeight: '100vh' }}><Spinner label="Đang xác thực…" /></div>;
+  if (q.isLoading) return <div style={{ background: C.outer, minHeight: '100vh' }}><Spinner label={t('loading')} /></div>;
   if (q.isError) return (
     <div style={{ background: C.outer, minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24, textAlign: 'center', fontFamily: "'Be Vietnam Pro',system-ui,sans-serif" }}>
-      <div><div style={{ fontSize: 46, marginBottom: 10 }}>🔍</div><b style={{ fontSize: 18 }}>Không tìm thấy sản phẩm</b><p style={{ color: C.label, marginTop: 4, fontFamily: MONO }}>{gtin}</p></div>
+      <div><div style={{ fontSize: 46, marginBottom: 10 }}>🔍</div><b style={{ fontSize: 18 }}>{t('notFound')}</b><p style={{ color: C.label, marginTop: 4, fontFamily: MONO }}>{gtin}</p></div>
     </div>
   );
 
@@ -56,17 +108,17 @@ export default function PublicTrace() {
   const defaultTab: 'sp' | 'dn' | 'tx' | 'np' = hasNp ? 'np' : hasLabel ? 'sp' : hasTx ? 'tx' : 'sp';
   const tab = manualTab ?? defaultTab;
   const baseTabs = [
-    { k: 'sp' as const, label: 'Nhãn điện tử' },
-    ...(hasNp ? [{ k: 'np' as const, label: 'Nhãn phụ' }] : []),
-    ...(hasTx ? [{ k: 'tx' as const, label: 'Truy xuất' }] : []),
-    { k: 'dn' as const, label: 'Doanh nghiệp' },
+    { k: 'sp' as const, label: t('tabElabel') },
+    ...(hasNp ? [{ k: 'np' as const, label: t('tabSupp') }] : []),
+    ...(hasTx ? [{ k: 'tx' as const, label: t('tabTrace') }] : []),
+    { k: 'dn' as const, label: t('tabBusiness') },
   ];
   const TABS = [...baseTabs.filter((t) => t.k === defaultTab), ...baseTabs.filter((t) => t.k !== defaultTab)];
 
   const stats = [
-    label?.netContent ? { k: 'ĐỊNH LƯỢNG', v: label.netContent } : null,
-    lotCode ? { k: 'MÃ LÔ', v: lotCode, mono: true } : null,
-    nsx ? { k: 'NGÀY SX', v: nsx } : null,
+    label?.netContent ? { k: t('statNetContent'), v: label.netContent } : null,
+    lotCode ? { k: t('statBatch'), v: lotCode, mono: true } : null,
+    nsx ? { k: t('statMfg'), v: nsx } : null,
   ].filter(Boolean) as { k: string; v: string; mono?: boolean }[];
 
   return (
@@ -81,14 +133,17 @@ export default function PublicTrace() {
             </div>
             <div style={{ lineHeight: 1.05 }}>
               <div style={{ fontWeight: 700, fontSize: 15, letterSpacing: '-.2px' }}>Vlabel</div>
-              <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: C.faint, marginTop: 1 }}>NHÃN ĐIỆN TỬ</div>
+              <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: C.faint, marginTop: 1 }}>{t('elabelCaps')}</div>
             </div>
           </div>
-          <div style={{ position: 'relative' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 9, background: C.chipBg, border: `1px solid ${C.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy }}>
-              <ShieldCheck size={16} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button type="button" onClick={() => setLang(lang === 'vi' ? 'en' : 'vi')} aria-label="Language" style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C.navy, background: C.chipBg, border: `1px solid ${C.chipBorder}`, borderRadius: 8, padding: '5px 9px', cursor: 'pointer' }}>{lang === 'vi' ? 'VI' : 'EN'}</button>
+            <div style={{ position: 'relative' }}>
+              <div style={{ width: 30, height: 30, borderRadius: 9, background: C.chipBg, border: `1px solid ${C.chipBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy }}>
+                <ShieldCheck size={16} />
+              </div>
+              <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: C.green, border: '2px solid #f7f4ee' }} />
             </div>
-            <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 10, height: 10, borderRadius: '50%', background: C.green, border: '2px solid #f7f4ee' }} />
           </div>
         </div>
 
@@ -101,12 +156,12 @@ export default function PublicTrace() {
             <span className="vl-pulse" style={{ position: 'absolute', top: -3, right: -3, width: 13, height: 13, borderRadius: '50%', background: C.green, border: '2.5px solid #f3f2ee' }} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: C.navy, fontWeight: 700, marginBottom: 4 }}>ĐÃ XÁC THỰC BỞI VLABEL</div>
+            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: C.navy, fontWeight: 700, marginBottom: 4 }}>{t('verifiedBy')}</div>
             {synced ? (
               <>
-                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Đã đồng bộ thông tin về cơ sở dữ liệu Quốc gia</div>
+                <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>{t('syncedNational')}</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 7 }}>
-                  {['Truy xuất nguồn gốc', 'Nhãn điện tử'].map((x) => (
+                  {[t('chipTrace'), t('chipElabel')].map((x) => (
                     <span key={x} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#fff', border: `1px solid ${C.chipBorder}`, borderRadius: 999, padding: '4px 9px 4px 6px', fontSize: 10.5, fontWeight: 600, color: C.navy }}>
                       <span style={{ width: 14, height: 14, borderRadius: '50%', background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Check size={9} color="#fff" /></span>
                       {x}
@@ -115,7 +170,7 @@ export default function PublicTrace() {
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>Thông tin nhãn điện tử đã được xác thực trên nền tảng Vlabel.</div>
+              <div style={{ fontSize: 12.5, lineHeight: 1.45, color: C.ink, fontWeight: 500 }}>{t('verifiedInfo')}</div>
             )}
           </div>
         </div>
@@ -128,7 +183,7 @@ export default function PublicTrace() {
                 <Building2 size={16} />
               </div>
               <div style={{ lineHeight: 1.15, minWidth: 0 }}>
-                <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '2px', color: C.faint }}>CUNG CẤP BỞI</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '2px', color: C.faint }}>{t('providedBy')}</div>
                 <div style={{ fontWeight: 600, fontSize: 14.5, marginTop: 1 }}>{company}</div>
               </div>
             </div>
@@ -139,7 +194,7 @@ export default function PublicTrace() {
               <img src={heroImg} alt="" style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 15, display: 'block' }} />
             ) : (
               <div style={{ aspectRatio: '1/1', borderRadius: 15, backgroundImage: STRIPE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '2px', color: C.faint2, background: 'rgba(255,255,255,.7)', padding: '6px 12px', borderRadius: 999 }}>ẢNH SẢN PHẨM</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '2px', color: C.faint2, background: 'rgba(255,255,255,.7)', padding: '6px 12px', borderRadius: 999 }}>{t('productImage')}</div>
               </div>
             )}
             {category && (
@@ -171,7 +226,7 @@ export default function PublicTrace() {
         {recalled && (
           <div style={{ margin: '14px 16px 0', background: '#fbeaec', border: '1px solid #e7a9b0', borderRadius: 16, padding: 14, display: 'flex', gap: 11, alignItems: 'flex-start' }}>
             <AlertTriangle size={19} color="#c0384a" style={{ flexShrink: 0, marginTop: 1 }} />
-            <div><b style={{ color: '#c0384a' }}>Sản phẩm đã bị thu hồi</b>{label.recallReason && <p style={{ fontSize: 13, color: C.body, marginTop: 3, lineHeight: 1.5 }}>Lý do: {label.recallReason}</p>}</div>
+            <div><b style={{ color: '#c0384a' }}>{t('recalledTitle')}</b>{label.recallReason && <p style={{ fontSize: 13, color: C.body, marginTop: 3, lineHeight: 1.5 }}>{t('reason')} {label.recallReason}</p>}</div>
           </div>
         )}
 
@@ -191,28 +246,28 @@ export default function PublicTrace() {
         {/* PANEL: NHÃN ĐIỆN TỬ */}
         {tab === 'sp' && (
           <div style={{ padding: '20px 16px 8px', display: 'flex', flexDirection: 'column', gap: 18 }} className="anim-in">
-            <Section title="THÔNG TIN SẢN PHẨM">
+            <Section title={t('secProductInfo')}>
               <RowsCard rows={[
-                ['Tên sản phẩm', d.product.name],
-                ['Nhãn hiệu', label?.brand],
+                [t('rowName'), d.product.name],
+                [t('rowBrand'), label?.brand],
                 ['GTIN', d.product.gtin, true],
-                ['Mã lô', lotCode, true],
-                ['Xuất xứ', label?.countryOfOrigin],
-                ['Thành phần', label?.ingredients],
-                ['Khối lượng tịnh', label?.netContent],
-                ['Mã HS', label?.hsCode, true],
-                ['Thị trường', label?.targetMarket],
-                ['Nhà cung cấp', label?.supplier],
-                ['Phân loại rủi ro', label ? RISK[label.riskLevel ?? 0] : null],
-                ['Ngày sản xuất', nsx],
+                [t('rowLot'), lotCode, true],
+                [t('rowOrigin'), label?.countryOfOrigin],
+                [t('rowIngredients'), label?.ingredients],
+                [t('rowNetWeight'), label?.netContent],
+                [t('rowHs'), label?.hsCode, true],
+                [t('rowMarket'), label?.targetMarket],
+                [t('rowSupplier'), label?.supplier],
+                [t('rowRisk'), label ? t(RISK[label.riskLevel ?? 0]) : null],
+                [t('rowMfgDate'), nsx],
               ]} />
             </Section>
 
             {(label?.usageInstructions || label?.storageInstructions) && (
-              <Section title="HƯỚNG DẪN">
+              <Section title={t('secInstructions')}>
                 <div style={cardBox}>
-                  {label.usageInstructions && <p style={{ fontSize: 13, lineHeight: 1.55 }}><b>Sử dụng: </b>{label.usageInstructions}</p>}
-                  {label.storageInstructions && <p style={{ fontSize: 13, lineHeight: 1.55, marginTop: label.usageInstructions ? 8 : 0 }}><b>Bảo quản: </b>{label.storageInstructions}</p>}
+                  {label.usageInstructions && <p style={{ fontSize: 13, lineHeight: 1.55 }}><b>{t('usageLbl')}</b>{label.usageInstructions}</p>}
+                  {label.storageInstructions && <p style={{ fontSize: 13, lineHeight: 1.55, marginTop: label.usageInstructions ? 8 : 0 }}><b>{t('storageLbl')}</b>{label.storageInstructions}</p>}
                 </div>
               </Section>
             )}
@@ -220,7 +275,7 @@ export default function PublicTrace() {
             {label?.safetyWarnings && (
               <div style={{ background: '#fff7ec', border: '1px solid #f0d9ad', borderRadius: 16, padding: 14, display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                 <AlertTriangle size={18} color="#b7791f" style={{ flexShrink: 0, marginTop: 1 }} />
-                <div><b style={{ fontSize: 13.5, color: '#8a5a12' }}>Cảnh báo an toàn</b><p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.body, marginTop: 3, whiteSpace: 'pre-line' }}>{label.safetyWarnings}</p></div>
+                <div><b style={{ fontSize: 13.5, color: '#8a5a12' }}>{t('safetyTitle')}</b><p style={{ fontSize: 12.5, lineHeight: 1.5, color: C.body, marginTop: 3, whiteSpace: 'pre-line' }}>{label.safetyWarnings}</p></div>
               </div>
             )}
 
@@ -233,21 +288,21 @@ export default function PublicTrace() {
                 <div style={{ position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
                     <span style={{ width: 7, height: 7, borderRadius: '50%', background: C.green, boxShadow: '0 0 0 3px rgba(125,212,166,.25)' }} />
-                    <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '1.5px', color: '#aebbe0', fontWeight: 600 }}>ĐÃ ĐỒNG BỘ DỮ LIỆU</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: '1.5px', color: '#aebbe0', fontWeight: 600 }}>{t('dataSynced')}</span>
                   </div>
-                  <div style={{ fontSize: 13, lineHeight: 1.5, color: '#f2f5fc', fontWeight: 500 }}>Đã đồng bộ lên Cổng thông tin truy xuất nguồn gốc hàng hóa quốc gia và Hệ thống Nhãn điện tử Quốc gia.</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.5, color: '#f2f5fc', fontWeight: 500 }}>{t('syncedPortalSystem')}</div>
                 </div>
               </div>
             )}
 
             {Array.isArray(label?.appendixFields) && label.appendixFields.length > 0 && (
-              <Section title={`NHÓM HÀNG HÓA${label.appendixGroup ? ` · ${label.appendixGroup}` : ''}`}>
+              <Section title={`${t('secGoodsGroup')}${label.appendixGroup ? ` · ${label.appendixGroup}` : ''}`}>
                 <RowsCard rows={label.appendixFields.map((a: any) => [a.label, String(a.value)])} />
               </Section>
             )}
 
             {Array.isArray(label?.images) && label.images.filter((i: any) => i?.url).length > 0 && (
-              <Section title="ẢNH SẢN PHẨM">
+              <Section title={t('secProductImages')}>
                 <div style={{ display: 'flex', gap: 8, overflowX: 'auto', margin: '0 -4px', padding: '0 4px' }}>
                   {label.images.filter((i: any) => i?.url).map((im: any, i: number) => (
                     <img key={i} src={im.url} alt={im.note ?? ''} style={{ width: 128, height: 128, borderRadius: 13, objectFit: 'cover', border: `1px solid ${C.line}`, flexShrink: 0 }} />
@@ -257,13 +312,13 @@ export default function PublicTrace() {
             )}
 
             {Array.isArray(label?.certificates) && label.certificates.filter(Boolean).length > 0 && (
-              <Section title="HỒ SƠ CHỨNG CHỈ">
+              <Section title={t('secCerts')}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {label.certificates.filter(Boolean).map((c: string, i: number) => (
                     <a key={i} href={c} target="_blank" rel="noreferrer" style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: '13px 14px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 2px rgba(20,20,30,.04)' }}>
                       <span style={{ width: 36, height: 36, borderRadius: 10, background: C.chipBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: C.navy }}><Award size={17} /></span>
-                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink }}>Chứng nhận {i + 1}</span>
-                      <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.navy, background: '#f6f4ef', border: `1px solid ${C.line2}`, padding: '5px 9px', borderRadius: 8 }}>XEM</span>
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: C.ink }}>{t('certLabel', { n: i + 1 })}</span>
+                      <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: C.navy, background: '#f6f4ef', border: `1px solid ${C.line2}`, padding: '5px 9px', borderRadius: 8 }}>{t('view')}</span>
                     </a>
                   ))}
                 </div>
@@ -275,16 +330,16 @@ export default function PublicTrace() {
         {/* PANEL: NHÃN PHỤ */}
         {tab === 'np' && d.supplementary && (
           <div style={{ padding: '20px 16px 8px', display: 'flex', flexDirection: 'column', gap: 16 }} className="anim-in">
-            <Section title="NHÃN PHỤ · BẮT BUỘC">
+            <Section title={t('secSuppMandatory')}>
               <div style={{ background: C.card, border: `1.5px solid ${C.navy}`, borderRadius: 16, overflow: 'hidden', boxShadow: '0 14px 34px -20px rgba(20,20,40,.22)' }}>
                 <div style={{ background: C.navy, color: '#fff', padding: '14px 16px' }}>
-                  <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, lineHeight: 1 }}>NHÃN PHỤ</div>
-                  <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: '#aebbe0', marginTop: 4 }}>NHÃN BỔ SUNG</div>
+                  <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 19, lineHeight: 1 }}>{t('suppTitle')}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: '#aebbe0', marginTop: 4 }}>{t('suppSubtitle')}</div>
                 </div>
                 <div style={{ padding: '4px 16px 14px' }} className="np-content" dangerouslySetInnerHTML={{ __html: d.supplementary.html }} />
                 <div style={{ background: '#f7f8fc', borderTop: `1px solid ${C.dash}`, padding: '11px 16px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: C.navy, marginTop: 6, flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, lineHeight: 1.5, color: C.muted }}>Nhãn phụ thể hiện bằng tiếng Việt theo <b style={{ color: C.navy }}>Nghị định 43/2017/NĐ-CP</b> về nhãn hàng hóa.</span>
+                  <span style={{ fontSize: 11, lineHeight: 1.5, color: C.muted }}>{t('npNote1')}<b style={{ color: C.navy }}>{t('npDecree')}</b>{t('npNote2')}</span>
                 </div>
               </div>
             </Section>
@@ -297,14 +352,14 @@ export default function PublicTrace() {
             <div>
               <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
                 <div>
-                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '2px', color: C.label, fontWeight: 600, marginBottom: 6 }}>CHUỖI CUNG ỨNG MINH BẠCH</div>
-                  <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 26, lineHeight: 1.1, letterSpacing: '-.3px' }}>Truy xuất<br />nguồn gốc</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '2px', color: C.label, fontWeight: 600, marginBottom: 6 }}>{t('secSupplyChain')}</div>
+                  <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 26, lineHeight: 1.1, letterSpacing: '-.3px' }}>{t('traceTitleA')}<br />{t('traceTitleB')}</div>
                 </div>
                 {lotCode && <div style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 600, color: C.navy, background: C.chipBg, border: `1px solid ${C.chipBorder}`, padding: '6px 10px', borderRadius: 999, whiteSpace: 'nowrap' }}>{lotCode}</div>}
               </div>
 
               {d.timeline.length === 0 ? (
-                <div style={cardBox}><p style={{ fontSize: 13, color: C.muted }}>Chưa có dữ liệu truy xuất công khai cho lô này.</p></div>
+                <div style={cardBox}><p style={{ fontSize: 13, color: C.muted }}>{t('noTraceData')}</p></div>
               ) : (
                 <div style={{ position: 'relative', paddingLeft: 34 }}>
                   <div style={{ position: 'absolute', left: 11, top: 12, bottom: 12, width: 2, background: 'linear-gradient(#dfe4f2,#eae6dd)' }} />
@@ -346,12 +401,12 @@ export default function PublicTrace() {
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', position: 'relative', marginBottom: 14 }}>
                   <div style={{ width: 38, height: 38, borderRadius: 11, background: '#2f4bb0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Globe size={19} color="#eaf0ff" /></div>
                   <div>
-                    <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: '#8a97c9', fontWeight: 600 }}>CỔNG QUỐC GIA</div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#eef1fb', marginTop: 3 }}>Đã đồng bộ Cổng truy xuất Quốc gia</div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '1.5px', color: '#8a97c9', fontWeight: 600 }}>{t('nationalPortalCaps')}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: '#eef1fb', marginTop: 3 }}>{t('syncedNationalPortal')}</div>
                   </div>
                 </div>
                 <a href={label.batch.traceabilityUrl} target="_blank" rel="noreferrer" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.16)', borderRadius: 12, padding: '11px', color: '#eaf0ff', fontSize: 13, fontWeight: 600 }}>
-                  Tra cứu trên Cổng quốc gia <ExternalLink size={15} />
+                  {t('lookupNational')} <ExternalLink size={15} />
                 </a>
               </div>
             )}
@@ -361,30 +416,30 @@ export default function PublicTrace() {
         {/* PANEL: DOANH NGHIỆP */}
         {tab === 'dn' && (
           <div style={{ padding: '20px 16px 8px', display: 'flex', flexDirection: 'column', gap: 20 }} className="anim-in">
-            <Section title="DOANH NGHIỆP CHỊU TRÁCH NHIỆM">
+            <Section title={t('secResponsible')}>
               {company && (
                 <div style={{ display: 'flex', gap: 13, alignItems: 'center', marginBottom: 14 }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: C.chipBg, border: '1px solid #e0e5f4', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.navy, flexShrink: 0 }}><Building2 size={24} /></div>
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.2 }}>{company}</div>
-                    {owner?.representative && <div style={{ fontSize: 12, color: C.label, marginTop: 3 }}>Đại diện: {owner.representative}</div>}
+                    {owner?.representative && <div style={{ fontSize: 12, color: C.label, marginTop: 3 }}>{t('repLbl')}{owner.representative}</div>}
                   </div>
                 </div>
               )}
               {owner && (owner.name || owner.tax_code || owner.address) ? (
                 <RowsCard rows={[
-                  ['Tên tổ chức', owner.name],
-                  ['Mã số thuế', owner.tax_code, true],
-                  ['Địa chỉ', owner.address],
-                  ['Người đại diện', owner.representative],
+                  [t('rowOrgName'), owner.name],
+                  [t('rowTaxCode'), owner.tax_code, true],
+                  [t('rowAddress'), owner.address],
+                  [t('rowRep'), owner.representative],
                 ]} />
-              ) : <div style={cardBox}><p style={{ fontSize: 13, color: C.muted }}>Chưa có thông tin doanh nghiệp.</p></div>}
+              ) : <div style={cardBox}><p style={{ fontSize: 13, color: C.muted }}>{t('noBusiness')}</p></div>}
             </Section>
 
             {owner?.address && (
               <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: '13px 14px', display: 'flex', gap: 12, alignItems: 'center' }}>
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: C.chipBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: C.navy }}><MapPin size={16} /></div>
-                <div><div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: C.faint }}>ĐỊA CHỈ</div><div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>{owner.address}</div></div>
+                <div><div style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: '1.5px', color: C.faint }}>{t('addressCaps')}</div><div style={{ fontSize: 13, fontWeight: 600, marginTop: 2 }}>{owner.address}</div></div>
               </div>
             )}
           </div>
@@ -392,18 +447,18 @@ export default function PublicTrace() {
 
         {/* FOOTER */}
         <div style={{ marginTop: 28, padding: '26px 20px 30px', background: C.footer, borderTop: `1px solid ${C.dash}`, textAlign: 'center' }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '2px', color: C.faint, marginBottom: 12 }}>CUNG CẤP BỞI</div>
+          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '2px', color: C.faint, marginBottom: 12 }}>{t('providedBy')}</div>
           <a href="https://vlabel.vn" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, marginBottom: 6 }}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: C.navy, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontFamily: SERIF, fontWeight: 700, color: '#fff', fontSize: 16 }}>V</span></div>
             <span style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 22, color: C.ink }}>Vlabel</span>
           </a>
-          <div style={{ fontSize: 12, color: C.label, marginBottom: 16 }}>Nền tảng nhãn điện tử &amp; truy xuất nguồn gốc</div>
+          <div style={{ fontSize: 12, color: C.label, marginBottom: 16 }}>{t('footerTagline')}</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, justifyContent: 'center', marginBottom: 16 }}>
             {['vlabel.vn', 'contact@vlabel.vn'].map((x) => (
               <span key={x} style={{ background: '#fff', border: `1px solid ${C.dash}`, borderRadius: 999, padding: '6px 12px', fontSize: 11.5, color: C.body }}>{x}</span>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: C.faint }}>© 2026 Vlabel. Bảo lưu mọi quyền.</div>
+          <div style={{ fontSize: 11, color: C.faint }}>{t('footerRights')}</div>
         </div>
       </div>
     </div>

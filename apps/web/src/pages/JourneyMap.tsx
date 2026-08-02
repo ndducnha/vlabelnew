@@ -10,13 +10,50 @@ import {
 } from '../lib/icons';
 import { api } from '../lib/api';
 import { PageHead, Spinner, EmptyState, StatCard, Drawer } from '../components/ui';
+import { useT, type Messages } from '../lib/i18n';
 import { loadLocations, saveLocations, matchLocation, distanceKm, LOC_TYPES, typeColor, DEFAULT_LOCATIONS, type Loc } from './journey/locations';
+
+const MSG: Messages = {
+  vi: {
+    title: 'Hành trình truy xuất', subtitle: 'Trực quan hóa đường đi của sản phẩm theo Sự kiện trong Luồng',
+    locations: 'Địa điểm', exportPdf: 'Xuất PDF',
+    product: 'Sản phẩm', searchPh: 'Tìm nhanh…', lotQr: 'Lô / QR', allLots: 'Tất cả lô', flow: 'Luồng', allFlows: 'Tất cả Luồng',
+    kpiDistance: 'Tổng quãng đường', kpiVisited: 'Điểm đã qua', kpiTime: 'Thời gian', kpiEvents: 'Sự kiện', kpiCurrent: 'Điểm hiện tại', kpiNext: 'Tiếp theo',
+    tabMap: 'Bản đồ', tabEnterprise: 'Sơ đồ DN', tabTimeline: 'Dòng thời gian',
+    tgPath: 'Đường đi', tgMarkers: 'Điểm mốc', tgDistance: 'Khoảng cách', tgInfo: 'Thông tin',
+    emptyTitle: 'Chưa có điểm hành trình', emptyHint: 'Sản phẩm/lô này chưa có Sự kiện nào được duyệt kèm địa điểm. Kê khai Sự kiện hoặc gán địa điểm doanh nghiệp để hiện trên bản đồ.',
+    done: 'Đã hoàn thành', eventFallback: 'Sự kiện', dash: '—',
+    hoursUnit: '{n} giờ', daysUnit: '{n} ngày',
+    noGps: 'Các điểm chưa có toạ độ · gán GPS trong "Địa điểm"',
+    tlEmptyTitle: 'Chưa có Sự kiện', tlEmptyHint: 'Sản phẩm chưa gắn Luồng có Sự kiện.', tlDone: 'Đã hoàn thành', tlPending: 'Chưa thực hiện', lotPrefix: 'Lô',
+    lmTitle: 'Địa điểm doanh nghiệp', lmReset: 'Khôi phục mặc định', lmAdd: 'Thêm địa điểm', lmEdit: 'Sửa địa điểm', lmNew: 'Địa điểm mới',
+    fName: 'Tên *', fCode: 'Mã', fType: 'Loại', fAddress: 'Địa chỉ', fLat: 'Vĩ độ (lat)', fLng: 'Kinh độ (lng)', fColor: 'Màu hiển thị', fColorHint: 'Mặc định theo loại; đổi nếu cần.', fNote: 'Ghi chú', lmSave: 'Lưu địa điểm',
+    lmMatch1: 'Sự kiện khớp địa điểm theo ', lmMatchBold: 'tên', lmMatch2: '. Toạ độ dùng cho bản đồ thực; màu/loại dùng cho sơ đồ.', lmEmpty: 'Chưa có địa điểm nào.', noGpsShort: 'chưa có GPS',
+  },
+  en: {
+    title: 'Traceability journey', subtitle: 'Visualize the product path by Events across the Flow',
+    locations: 'Locations', exportPdf: 'Export PDF',
+    product: 'Product', searchPh: 'Quick search…', lotQr: 'Batch / QR', allLots: 'All batches', flow: 'Flow', allFlows: 'All Flows',
+    kpiDistance: 'Total distance', kpiVisited: 'Points visited', kpiTime: 'Duration', kpiEvents: 'Events', kpiCurrent: 'Current point', kpiNext: 'Next',
+    tabMap: 'Map', tabEnterprise: 'Diagram', tabTimeline: 'Timeline',
+    tgPath: 'Path', tgMarkers: 'Markers', tgDistance: 'Distance', tgInfo: 'Info',
+    emptyTitle: 'No journey points yet', emptyHint: 'This product/batch has no approved Events with a location yet. Record Events or assign business locations to show them on the map.',
+    done: 'Completed', eventFallback: 'Event', dash: '—',
+    hoursUnit: '{n} h', daysUnit: '{n} days',
+    noGps: 'Points have no coordinates · assign GPS in "Locations"',
+    tlEmptyTitle: 'No Events yet', tlEmptyHint: 'Product has no Flow with Events attached.', tlDone: 'Completed', tlPending: 'Not done', lotPrefix: 'Batch',
+    lmTitle: 'Business locations', lmReset: 'Restore defaults', lmAdd: 'Add location', lmEdit: 'Edit location', lmNew: 'New location',
+    fName: 'Name *', fCode: 'Code', fType: 'Type', fAddress: 'Address', fLat: 'Latitude (lat)', fLng: 'Longitude (lng)', fColor: 'Display color', fColorHint: 'Defaults by type; change if needed.', fNote: 'Note', lmSave: 'Save location',
+    lmMatch1: 'Events match a location by ', lmMatchBold: 'name', lmMatch2: '. Coordinates power the real map; color/type power the diagram.', lmEmpty: 'No locations yet.', noGpsShort: 'no GPS',
+  },
+};
 
 const vnDateTime = (x?: string | null) => (x ? new Date(x).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—');
 const bearing = (a: any, b: any) => { const R = (d: number) => (d * Math.PI) / 180, D = (r: number) => (r * 180) / Math.PI; const y = Math.sin(R(b.lng - a.lng)) * Math.cos(R(b.lat)); const x = Math.cos(R(a.lat)) * Math.sin(R(b.lat)) - Math.sin(R(a.lat)) * Math.cos(R(b.lat)) * Math.cos(R(b.lng - a.lng)); return (D(Math.atan2(y, x)) + 360) % 360; };
-const fmtDur = (ms: number) => { if (ms <= 0) return '—'; const h = Math.round(ms / 36e5); if (h < 48) return `${h} giờ`; return `${Math.round(h / 24)} ngày`; };
 
 export default function JourneyMap() {
+  const t = useT(MSG);
+  const fmtDur = (ms: number) => { if (ms <= 0) return t('dash'); const h = Math.round(ms / 36e5); if (h < 48) return t('hoursUnit', { n: h }); return t('daysUnit', { n: Math.round(h / 24) }); };
   const products = useQuery({ queryKey: ['products'], queryFn: () => api.get('/products').then((r) => r.data) });
   const flowsAll = useQuery({ queryKey: ['flows-all'], queryFn: () => api.get('/flows').then((r) => r.data) });
   const [productId, setProductId] = useState('');
@@ -60,12 +97,12 @@ export default function JourneyMap() {
       const loc = matchLocation(locs, r.location);
       const gps = (r.gpsLat != null && r.gpsLng != null) ? { lat: r.gpsLat, lng: r.gpsLng } : (loc?.lat != null && loc?.lng != null) ? { lat: loc.lat, lng: loc.lng } : null;
       return {
-        id: r.id, event: r.eventDefinition?.name ?? 'Sự kiện', order: r.eventDefinition?.order ?? 0, eventDefinitionId: r.eventDefinitionId,
+        id: r.id, event: r.eventDefinition?.name ?? t('eventFallback'), order: r.eventDefinition?.order ?? 0, eventDefinitionId: r.eventDefinitionId,
         location: r.location || loc?.name || '—', locObj: loc, gps, color: typeColor(loc?.type, loc?.color),
         performedAt: r.performedAt, performer: r.performedBy?.fullName ?? r.performedByName ?? '—', action: r.action, lot: r.traceableItem?.batchOrLot, status: r.status,
       };
     });
-  }, [records.data, lot, flowId, defToFlow, locs]);
+  }, [records.data, lot, flowId, defToFlow, locs, t]);
 
   // Dòng thời gian đầy đủ: mọi công đoạn của Flow, đánh dấu đã/chưa hoàn thành
   const timeline = useMemo<any[]>(() => {
@@ -81,8 +118,8 @@ export default function JourneyMap() {
   useEffect(() => {
     if (!playing) return;
     if (current >= stops.length - 1) { setPlaying(false); return; }
-    const t = setTimeout(() => setCurrent((c) => Math.min(stops.length - 1, c + 1)), 1400 / speed);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setCurrent((c) => Math.min(stops.length - 1, c + 1)), 1400 / speed);
+    return () => clearTimeout(timer);
   }, [playing, current, speed, stops.length]);
 
   // Dashboard
@@ -90,40 +127,40 @@ export default function JourneyMap() {
   const totalKm = gpsStops.reduce((sum, s, i) => (i === 0 ? 0 : sum + distanceKm(gpsStops[i - 1].gps!, s.gps!)), 0);
   const times = stops.map((s) => s.performedAt).filter(Boolean).map((x) => new Date(x).getTime());
   const totalMs = times.length ? Math.max(...times) - Math.min(...times) : 0;
-  const doneCount = timeline.filter((t) => t.done).length;
+  const doneCount = timeline.filter((x) => x.done).length;
   const flowDone = flowEvents.length > 0 && doneCount === flowEvents.length;
-  const nextEvent = timeline.find((t) => !t.done)?.ev?.name ?? (flowDone ? 'Đã hoàn thành' : '—');
+  const nextEvent = timeline.find((x) => !x.done)?.ev?.name ?? (flowDone ? t('done') : '—');
 
   const shownProducts = (products.data ?? []).filter((p: any) => !pq || p.name.toLowerCase().includes(pq.toLowerCase()) || (p.gtin ?? '').includes(pq));
 
   return (
     <>
-      <PageHead title="Hành trình truy xuất" subtitle="Trực quan hóa đường đi của sản phẩm theo Sự kiện trong Luồng"
+      <PageHead title={t('title')} subtitle={t('subtitle')}
         actions={<>
-          <button className="btn" onClick={() => setManageLoc(true)}><Building2 size={15} />Địa điểm</button>
-          <button className="btn" onClick={() => window.print()}><Printer size={15} />Xuất PDF</button>
+          <button className="btn" onClick={() => setManageLoc(true)}><Building2 size={15} />{t('locations')}</button>
+          <button className="btn" onClick={() => window.print()}><Printer size={15} />{t('exportPdf')}</button>
         </>} />
 
       {/* Bộ lọc nguồn hành trình */}
       <div className="card p-3.5 mb-4 flex flex-wrap items-end gap-3">
-        <label className="block flex-1 min-w-[220px]"><span className="label">Sản phẩm</span>
+        <label className="block flex-1 min-w-[220px]"><span className="label">{t('product')}</span>
           <div className="flex items-center gap-2 rounded-[12px] px-3 h-11" style={{ border: '1px solid var(--border-strong)', background: 'var(--bg)' }}>
             <Search size={15} className="text-[var(--muted)]" />
-            <input className="bg-transparent outline-none text-sm flex-1" placeholder="Tìm nhanh…" value={pq} onChange={(e) => setPq(e.target.value)} />
+            <input className="bg-transparent outline-none text-sm flex-1" placeholder={t('searchPh')} value={pq} onChange={(e) => setPq(e.target.value)} />
           </div>
           <select className="input mt-2" value={productId} onChange={(e) => setProductId(e.target.value)}>
             {shownProducts.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.gtin})</option>)}
           </select>
         </label>
-        <label className="block"><span className="label">Lô / QR</span>
+        <label className="block"><span className="label">{t('lotQr')}</span>
           <select className="input" style={{ minWidth: 160 }} value={lot} onChange={(e) => setLot(e.target.value)}>
-            <option value="all">Tất cả lô</option>
+            <option value="all">{t('allLots')}</option>
             {lots.map((l: any) => <option key={l} value={l}>{l}</option>)}
           </select>
         </label>
-        <label className="block"><span className="label">Luồng</span>
+        <label className="block"><span className="label">{t('flow')}</span>
           <select className="input" style={{ minWidth: 170 }} value={flowId} onChange={(e) => setFlowId(e.target.value)}>
-            <option value="all">Tất cả Luồng</option>
+            <option value="all">{t('allFlows')}</option>
             {productFlows.map((f: any) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select>
         </label>
@@ -131,24 +168,24 @@ export default function JourneyMap() {
 
       {/* Dashboard hành trình */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 mb-4">
-        <StatCard icon={<Ruler size={16} />} label="Tổng quãng đường" value={`${totalKm.toFixed(1)} km`} />
-        <StatCard icon={<MapPin size={16} />} label="Điểm đã qua" value={gpsStops.length} tone="accent" />
-        <StatCard icon={<Clock size={16} />} label="Thời gian" value={fmtDur(totalMs)} />
-        <StatCard icon={<ListChecks size={16} />} label="Sự kiện" value={`${doneCount}/${flowEvents.length}`} tone={flowDone ? 'good' : 'warn'} />
-        <StatCard icon={<Navigation size={16} />} label="Điểm hiện tại" value={stops[current]?.event ?? '—'} tone="accent" />
-        <StatCard icon={<Milestone size={16} />} label="Tiếp theo" value={nextEvent} tone={flowDone ? 'good' : 'warn'} />
+        <StatCard icon={<Ruler size={16} />} label={t('kpiDistance')} value={`${totalKm.toFixed(1)} km`} />
+        <StatCard icon={<MapPin size={16} />} label={t('kpiVisited')} value={gpsStops.length} tone="accent" />
+        <StatCard icon={<Clock size={16} />} label={t('kpiTime')} value={fmtDur(totalMs)} />
+        <StatCard icon={<ListChecks size={16} />} label={t('kpiEvents')} value={`${doneCount}/${flowEvents.length}`} tone={flowDone ? 'good' : 'warn'} />
+        <StatCard icon={<Navigation size={16} />} label={t('kpiCurrent')} value={stops[current]?.event ?? '—'} tone="accent" />
+        <StatCard icon={<Milestone size={16} />} label={t('kpiNext')} value={nextEvent} tone={flowDone ? 'good' : 'warn'} />
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <div className="tabbar" style={{ maxWidth: 360 }}>
-          {([['map', 'Bản đồ', MapIcon], ['enterprise', 'Sơ đồ DN', RouteIcon], ['timeline', 'Dòng thời gian', ListChecks]] as const).map(([k, l, Icon]) => (
-            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}><Icon size={14} />{l}</button>
+          {([['map', t('tabMap'), MapIcon], ['enterprise', t('tabEnterprise'), RouteIcon], ['timeline', t('tabTimeline'), ListChecks]] as const).map(([k, l, Icon]) => (
+            <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k as any)}><Icon size={14} />{l}</button>
           ))}
         </div>
         {tab !== 'timeline' && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            {([['path', 'Đường đi'], ['markers', 'Điểm mốc'], ['distance', 'Khoảng cách'], ['info', 'Thông tin']] as const).map(([k, l]) => (
+            {([['path', t('tgPath')], ['markers', t('tgMarkers')], ['distance', t('tgDistance')], ['info', t('tgInfo')]] as const).map(([k, l]) => (
               <button key={k} className={`chip ${(show as any)[k] ? 'chip-accent' : ''}`} style={{ cursor: 'pointer' }} onClick={() => setShow((s) => ({ ...s, [k]: !(s as any)[k] }))}>{l}</button>
             ))}
           </div>
@@ -156,10 +193,10 @@ export default function JourneyMap() {
       </div>
 
       {records.isLoading ? <Spinner /> : stops.length === 0 && tab !== 'timeline' ? (
-        <div className="card"><EmptyState title="Chưa có điểm hành trình" hint="Sản phẩm/lô này chưa có Sự kiện nào được duyệt kèm địa điểm. Kê khai Sự kiện hoặc gán địa điểm doanh nghiệp để hiện trên bản đồ." /></div>
+        <div className="card"><EmptyState title={t('emptyTitle')} hint={t('emptyHint')} /></div>
       ) : (
         <>
-          {tab === 'map' && <RealMap key={productId + lot + flowId} stops={stops} current={current} show={show} />}
+          {tab === 'map' && <RealMap key={productId + lot + flowId} stops={stops} current={current} show={show} noGpsText={t('noGps')} />}
           {tab === 'enterprise' && <EnterpriseMap stops={stops} current={current} show={show} />}
           {tab === 'timeline' && <TimelineView timeline={timeline} current={current} onPick={(i: number) => setCurrent(i)} />}
         </>
@@ -191,7 +228,7 @@ export default function JourneyMap() {
 }
 
 // ══════════ Bản đồ thực (Leaflet / OpenStreetMap) ══════════
-function RealMap({ stops, current, show }: any) {
+function RealMap({ stops, current, show, noGpsText }: any) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
@@ -244,7 +281,7 @@ function RealMap({ stops, current, show }: any) {
   return (
     <div className="relative">
       <div ref={el} style={{ height: 460, borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)', zIndex: 0 }} />
-      {noGps && <div className="absolute inset-0 grid place-items-center pointer-events-none"><div className="pill pill-warn">Các điểm chưa có toạ độ · gán GPS trong "Địa điểm"</div></div>}
+      {noGps && <div className="absolute inset-0 grid place-items-center pointer-events-none"><div className="pill pill-warn">{noGpsText}</div></div>}
     </div>
   );
 }
@@ -275,15 +312,16 @@ function EnterpriseMap({ stops, current, show }: any) {
 
 // ══════════ Timeline ══════════
 function TimelineView({ timeline, current, onPick }: any) {
-  if (timeline.length === 0) return <div className="card"><EmptyState title="Chưa có Sự kiện" hint="Sản phẩm chưa gắn Luồng có Sự kiện." /></div>;
+  const t = useT(MSG);
+  if (timeline.length === 0) return <div className="card"><EmptyState title={t('tlEmptyTitle')} hint={t('tlEmptyHint')} /></div>;
   let doneIdx = -1;
   return (
     <div className="card p-4">
       <div className="relative pl-1">
-        {timeline.map((t: any, i: number) => {
-          const done = t.done; if (done) doneIdx++; const stopIdx = doneIdx;
+        {timeline.map((row: any, i: number) => {
+          const done = row.done; if (done) doneIdx++; const stopIdx = doneIdx;
           const active = done && stopIdx === current;
-          const c = t.stop?.color || 'var(--accent)';
+          const c = row.stop?.color || 'var(--accent)';
           return (
             <div key={i} className="flex gap-3.5 pb-5 relative">
               {i < timeline.length - 1 && <span className="absolute left-[15px] top-[34px] bottom-0 w-0.5" style={{ background: done ? c : 'var(--border-strong)' }} />}
@@ -292,15 +330,15 @@ function TimelineView({ timeline, current, onPick }: any) {
               </button>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <b className="text-[14.5px]">{t.ev.name}</b>
-                  <span className={`pill ${done ? 'pill-good' : 'pill-neutral'}`} style={{ fontSize: 10.5 }}><i />{done ? 'Đã hoàn thành' : 'Chưa thực hiện'}</span>
-                  {t.ev.flowName && <span className="chip" style={{ fontSize: 10.5 }}>{t.ev.flowName}</span>}
+                  <b className="text-[14.5px]">{row.ev.name}</b>
+                  <span className={`pill ${done ? 'pill-good' : 'pill-neutral'}`} style={{ fontSize: 10.5 }}><i />{done ? t('tlDone') : t('tlPending')}</span>
+                  {row.ev.flowName && <span className="chip" style={{ fontSize: 10.5 }}>{row.ev.flowName}</span>}
                 </div>
-                {t.stop && (
+                {row.stop && (
                   <div className="text-[12.5px] text-[var(--muted)] mt-1 flex flex-col gap-0.5">
-                    <span className="inline-flex items-center gap-1.5"><MapPin size={12} />{t.stop.location}{t.stop.lot ? ` · Lô ${t.stop.lot}` : ''}</span>
-                    <span className="inline-flex items-center gap-1.5"><Clock size={12} />{vnDateTime(t.stop.performedAt)} · {t.stop.performer}</span>
-                    {t.stop.action && <span className="text-[var(--ink-2)]">{t.stop.action}</span>}
+                    <span className="inline-flex items-center gap-1.5"><MapPin size={12} />{row.stop.location}{row.stop.lot ? ` · ${t('lotPrefix')} ${row.stop.lot}` : ''}</span>
+                    <span className="inline-flex items-center gap-1.5"><Clock size={12} />{vnDateTime(row.stop.performedAt)} · {row.stop.performer}</span>
+                    {row.stop.action && <span className="text-[var(--ink-2)]">{row.stop.action}</span>}
                   </div>
                 )}
               </div>
@@ -314,6 +352,7 @@ function TimelineView({ timeline, current, onPick }: any) {
 
 // ══════════ Quản lý địa điểm doanh nghiệp ══════════
 function LocationManager({ locs, onChange, onClose }: { locs: Loc[]; onChange: (l: Loc[]) => void; onClose: () => void }) {
+  const t = useT(MSG);
   const [edit, setEdit] = useState<Loc | null>(null);
   const blank: Loc = { id: '', name: '', code: '', type: 'factory', address: '', lat: null, lng: null, note: '' };
   const save = (l: Loc) => {
@@ -327,44 +366,44 @@ function LocationManager({ locs, onChange, onClose }: { locs: Loc[]; onChange: (
   const reset = () => onChange(DEFAULT_LOCATIONS);
 
   return (
-    <Drawer open onClose={onClose} title={<b>Địa điểm doanh nghiệp</b>}
-      footer={<><button className="btn btn-sm" onClick={reset}>Khôi phục mặc định</button><div className="flex-1" /><button className="btn btn-primary" onClick={() => setEdit(blank)}><Plus size={15} />Thêm địa điểm</button></>}>
+    <Drawer open onClose={onClose} title={<b>{t('lmTitle')}</b>}
+      footer={<><button className="btn btn-sm" onClick={reset}>{t('lmReset')}</button><div className="flex-1" /><button className="btn btn-primary" onClick={() => setEdit(blank)}><Plus size={15} />{t('lmAdd')}</button></>}>
       {edit ? (
         <div className="flex flex-col gap-3 anim-in">
-          <div className="flex items-center justify-between"><b>{edit.id ? 'Sửa địa điểm' : 'Địa điểm mới'}</b><button className="btn btn-ghost btn-sm" onClick={() => setEdit(null)}><X size={16} /></button></div>
+          <div className="flex items-center justify-between"><b>{edit.id ? t('lmEdit') : t('lmNew')}</b><button className="btn btn-ghost btn-sm" onClick={() => setEdit(null)}><X size={16} /></button></div>
           <div className="grid grid-cols-2 gap-2.5">
-            <label className="block"><span className="label">Tên *</span><input className="input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
-            <label className="block"><span className="label">Mã</span><input className="input mono" value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value })} /></label>
+            <label className="block"><span className="label">{t('fName')}</span><input className="input" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label>
+            <label className="block"><span className="label">{t('fCode')}</span><input className="input mono" value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value })} /></label>
           </div>
-          <label className="block"><span className="label">Loại</span>
+          <label className="block"><span className="label">{t('fType')}</span>
             <select className="input" value={edit.type} onChange={(e) => setEdit({ ...edit, type: e.target.value })}>
               {Object.entries(LOC_TYPES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
             </select>
           </label>
-          <label className="block"><span className="label">Địa chỉ</span><input className="input" value={edit.address ?? ''} onChange={(e) => setEdit({ ...edit, address: e.target.value })} /></label>
+          <label className="block"><span className="label">{t('fAddress')}</span><input className="input" value={edit.address ?? ''} onChange={(e) => setEdit({ ...edit, address: e.target.value })} /></label>
           <div className="grid grid-cols-2 gap-2.5">
-            <label className="block"><span className="label">Vĩ độ (lat)</span><input className="input mono" type="number" step="any" value={edit.lat ?? ''} onChange={(e) => setEdit({ ...edit, lat: e.target.value === '' ? null : Number(e.target.value) })} /></label>
-            <label className="block"><span className="label">Kinh độ (lng)</span><input className="input mono" type="number" step="any" value={edit.lng ?? ''} onChange={(e) => setEdit({ ...edit, lng: e.target.value === '' ? null : Number(e.target.value) })} /></label>
+            <label className="block"><span className="label">{t('fLat')}</span><input className="input mono" type="number" step="any" value={edit.lat ?? ''} onChange={(e) => setEdit({ ...edit, lat: e.target.value === '' ? null : Number(e.target.value) })} /></label>
+            <label className="block"><span className="label">{t('fLng')}</span><input className="input mono" type="number" step="any" value={edit.lng ?? ''} onChange={(e) => setEdit({ ...edit, lng: e.target.value === '' ? null : Number(e.target.value) })} /></label>
           </div>
-          <label className="block"><span className="label">Màu hiển thị</span>
+          <label className="block"><span className="label">{t('fColor')}</span>
             <div className="flex items-center gap-2">
               <input type="color" value={typeColor(edit.type, edit.color)} onChange={(e) => setEdit({ ...edit, color: e.target.value })} style={{ width: 44, height: 38, borderRadius: 10, border: '1px solid var(--border)' }} />
-              <span className="text-xs text-[var(--muted)]">Mặc định theo loại; đổi nếu cần.</span>
+              <span className="text-xs text-[var(--muted)]">{t('fColorHint')}</span>
             </div>
           </label>
-          <label className="block"><span className="label">Ghi chú</span><textarea className="input min-h-[60px]" value={edit.note ?? ''} onChange={(e) => setEdit({ ...edit, note: e.target.value })} /></label>
-          <button className="btn btn-primary" disabled={!edit.name.trim()} onClick={() => save(edit)}>Lưu địa điểm</button>
+          <label className="block"><span className="label">{t('fNote')}</span><textarea className="input min-h-[60px]" value={edit.note ?? ''} onChange={(e) => setEdit({ ...edit, note: e.target.value })} /></label>
+          <button className="btn btn-primary" disabled={!edit.name.trim()} onClick={() => save(edit)}>{t('lmSave')}</button>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-[12.5px] text-[var(--muted)]">Sự kiện khớp địa điểm theo <b>tên</b>. Toạ độ dùng cho bản đồ thực; màu/loại dùng cho sơ đồ.</p>
-          {locs.length === 0 && <p className="text-sm text-[var(--muted)] py-2">Chưa có địa điểm nào.</p>}
+          <p className="text-[12.5px] text-[var(--muted)]">{t('lmMatch1')}<b>{t('lmMatchBold')}</b>{t('lmMatch2')}</p>
+          {locs.length === 0 && <p className="text-sm text-[var(--muted)] py-2">{t('lmEmpty')}</p>}
           {locs.map((l) => (
             <div key={l.id} className="flex items-center gap-2.5 p-2.5 rounded-xl" style={{ border: '1px solid var(--border)' }}>
               <span className="w-8 h-8 rounded-lg grid place-items-center flex-none text-white" style={{ background: typeColor(l.type, l.color) }}><MapPin size={15} /></span>
               <div className="flex-1 min-w-0">
                 <b className="text-[13px] block truncate">{l.name}</b>
-                <div className="text-[11px] text-[var(--muted)] truncate">{LOC_TYPES[l.type]?.label ?? l.type}{l.lat != null ? ` · ${l.lat.toFixed(3)}, ${l.lng?.toFixed(3)}` : ' · chưa có GPS'}</div>
+                <div className="text-[11px] text-[var(--muted)] truncate">{LOC_TYPES[l.type]?.label ?? l.type}{l.lat != null ? ` · ${l.lat.toFixed(3)}, ${l.lng?.toFixed(3)}` : ` · ${t('noGpsShort')}`}</div>
               </div>
               <button className="btn btn-sm" onClick={() => setEdit(l)}><Pencil size={12} /></button>
               <button className="btn btn-sm btn-danger" onClick={() => del(l.id)}><Trash2 size={12} /></button>
