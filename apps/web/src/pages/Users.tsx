@@ -172,35 +172,32 @@ export default function Users() {
             </div>
           )}
 
-          {/* Card cho mobile */}
+          {/* Card cho màn nhỏ/tablet — xếp dọc, không cột cố định (tránh chồng chữ khi có sidebar) */}
           <div className="flex flex-col gap-3 lg:hidden">
             {paged.rows.map((u: any) => (
-              <div key={u.id} className="card card-hover p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                <div className="flex items-center gap-3 min-w-0 sm:w-[240px] sm:flex-none">
+              <div key={u.id} className="card card-hover p-4 flex flex-col gap-2.5">
+                <div className="flex items-center gap-3 min-w-0">
                   <Avatar name={u.fullName} size={40} />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="font-bold truncate">{u.fullName}</div>
-                    <div className="flex items-center gap-1 text-xs text-[var(--muted)] truncate">
+                    <div className="flex items-center gap-1 text-xs text-[var(--muted)] min-w-0">
                       <Mail size={12} className="flex-none" />
                       <span className="truncate">{u.email}</span>
                     </div>
                   </div>
+                  <button className="btn btn-sm flex-none" onClick={() => setFlowUser(u)}>
+                    <GitBranch size={13} />{t('permissions')}
+                  </button>
                 </div>
-
-                <div className="flex flex-wrap items-center gap-1.5 flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {u.roles.length === 0
                     ? <span className="pill pill-neutral">{t('noRole')}</span>
                     : u.roles.map((r: any) => <span key={r.role.key} className="chip chip-accent">{r.role.name}</span>)}
                 </div>
-
-                <div className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] sm:w-[170px] sm:flex-none min-w-0">
+                <div className="flex items-center gap-1.5 text-[13px] text-[var(--muted)] min-w-0">
                   <Building2 size={14} className="flex-none text-[var(--faint)]" />
                   <span className="truncate">{u.organization?.name ?? t('noUnit')}</span>
                 </div>
-
-                <button className="btn btn-sm sm:flex-none w-full sm:w-auto justify-center" onClick={() => setFlowUser(u)}>
-                  <GitBranch size={13} />{t('permissions')}
-                </button>
               </div>
             ))}
           </div>
