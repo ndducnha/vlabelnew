@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2, Search } from '../lib/icons';
+import { ChevronRight, Building2, Factory, FolderTree, Plus, Loader2, ChevronUp, ChevronDown, Trash2, Search, MoreVertical } from '../lib/icons';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useApiMutation } from '../lib/useApiMutation';
@@ -37,6 +37,7 @@ const MSG: Messages = {
     addInto: 'Thêm vào ',
     lblName: 'Tên',
     lblCode: 'Mã (duy nhất)',
+    actions: 'Chức năng',
   },
   en: {
     unitAdded: 'Unit added',
@@ -65,6 +66,7 @@ const MSG: Messages = {
     addInto: 'Add to ',
     lblName: 'Name',
     lblCode: 'Code (unique)',
+    actions: 'Actions',
   },
 };
 
@@ -104,6 +106,7 @@ export default function Organizations() {
 
   const Row = ({ node, index, count }: { node: Node; index: number; count: number }) => {
     const [open, setOpen] = useState(node.level < 2);
+    const [menu, setMenu] = useState(false);
     const has = node.children.length > 0;
     const Icon = node.level === 0 ? Building2 : node.type === 'FACTORY' ? Factory : FolderTree;
     const root = node.level === 0;
@@ -133,12 +136,30 @@ export default function Organizations() {
           </div>
           <span className={`pill ${root ? 'pill-accent' : 'pill-neutral'} flex-none`}>{t('level', { n: node.level + 1 })}</span>
           {canManage && (
-            <span className="flex flex-none gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-              <button className="btn btn-sm" title={t('promote')} disabled={node.level === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'up' })}><ChevronUp size={15} /></button>
-              <button className="btn btn-sm" title={t('demote')} disabled={index === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'down' })}><ChevronDown size={15} /></button>
-              <button className="btn btn-sm" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={15} /></button>
-              <button className="btn btn-sm btn-danger" title={t('delete')} onClick={() => { if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={15} /></button>
-            </span>
+            <>
+              {/* Desktop: nút inline hiện khi rê chuột */}
+              <span className="hidden md:flex flex-none gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button className="btn btn-sm" title={t('promote')} disabled={node.level === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'up' })}><ChevronUp size={15} /></button>
+                <button className="btn btn-sm" title={t('demote')} disabled={index === 0} onClick={() => mLevel.mutate({ id: node.id, direction: 'down' })}><ChevronDown size={15} /></button>
+                <button className="btn btn-sm" title={t('addSub')} onClick={() => { setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={15} /></button>
+                <button className="btn btn-sm btn-danger" title={t('delete')} onClick={() => { if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={15} /></button>
+              </span>
+              {/* Mobile: gom vào menu "⋯" để không che tên */}
+              <div className="md:hidden relative flex-none">
+                <button className="btn btn-sm" aria-label={t('actions')} onClick={() => setMenu((v) => !v)}><MoreVertical size={16} /></button>
+                {menu && (
+                  <>
+                    <div className="fixed inset-0 z-[79]" onClick={() => setMenu(false)} />
+                    <div className="absolute right-0 top-full mt-1 z-[80] w-48 p-1 rounded-xl" style={{ background: 'var(--bg)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)' }}>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)] disabled:opacity-40" disabled={node.level === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'up' }); }}><ChevronUp size={16} />{t('promote')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)] disabled:opacity-40" disabled={index === 0} onClick={() => { setMenu(false); mLevel.mutate({ id: node.id, direction: 'down' }); }}><ChevronDown size={16} />{t('demote')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--ink-2)] hover:bg-[var(--surface)]" onClick={() => { setMenu(false); setForm({ name: '', code: '' }); setCreate({ parentId: node.id }); }}><Plus size={16} />{t('addSub')}</button>
+                      <button className="w-full flex items-center gap-2.5 px-2.5 py-2.5 rounded-lg text-[14px] text-left text-[var(--danger)] hover:bg-[var(--danger-soft)]" onClick={() => { setMenu(false); if (window.confirm(t('confirmDelete', { name: node.name }))) mDelete.mutate(node.id); }}><Trash2 size={16} />{t('delete')}</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
           )}
         </div>
         {has && open && <div className="ml-5 pl-3" style={{ borderLeft: '1px solid var(--hairline)' }}>{node.children.map((c, i, arr) => <Row key={c.id} node={c} index={i} count={arr.length} />)}</div>}

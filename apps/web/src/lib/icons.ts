@@ -54,6 +54,7 @@ export {
   MapPin,
   Flag as Milestone,
   Minus, Moon,
+  DotsThreeVertical as MoreVertical,
   NavigationArrow as Navigation,
   ShareNetwork as Network,
   Package, Pause,
